@@ -4,8 +4,8 @@ import { logout } from "./server/auth";
 
 const projects = [
   { slug:"vendor-advance", name:"Vendor Cash Advance Proposal", summary:"Interactive presentation on vendor financing partnership model.", href:"/vendor-advance-slides.html" },
-  { slug:"example-1", name:"Example Prototype A", summary:"Small demo to validate UI interactions.", href:"#" },
-  { slug:"example-2", name:"Example Prototype B", summary:"Early model for internal logic.", href:"#" },
+  { slug:"example-1", name:"Jeremy Prime", summary:"Our 5-step method to digitally clone yourself for autonomous petty task completion.", href:"#" },
+  { slug:"example-2", name:"Front Runner", summary:"Sub-mm Lidar + MTurk + HL VTOL = 92% accurate crop yield data ~120 days in advance.", href:"#" },
 ];
 
 export default async function Home(){
