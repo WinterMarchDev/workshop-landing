@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { FeedbackPanel } from "./server/feedback";
 import { logout } from "./server/auth";
+import { PasswordProtectedLink } from "./components/PasswordProtectedLink";
 
 const projects = [
   { slug:"vendor-advance", name:"Gamified Invoice Factoring", summary:"Interactive presentation on vendor financing partnership model.", href:"/vendor-advance-slides.html" },
@@ -28,7 +28,7 @@ export default async function Home(){
               <h4 className="text-base font-semibold">{p.name}</h4>
               <p className="mt-1 text-sm text-black/70">{p.summary}</p>
               <div className="mt-4 flex gap-3">
-                <Link href={p.href} className="rounded-xl bg-black px-3 py-1.5 text-sm text-white">Open</Link>
+                <PasswordProtectedLink href={p.href} projectName={p.name} />
                 <FeedbackPanel project={p.name} />
               </div>
             </article>
