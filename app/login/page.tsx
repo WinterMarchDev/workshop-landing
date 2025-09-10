@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { useSearchParams } from "next/navigation";
@@ -18,7 +19,7 @@ function SubmitBtn() {
   );
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const [state, formAction] = useActionState(login, { ok: false, error: "" });
   const sp = useSearchParams();
   const next = sp.get("next") || "/";
@@ -42,5 +43,18 @@ export default function LoginPage() {
       </form>
       <p className="mt-6 text-xs text-black/60">Problems? Contact the owner.</p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto max-w-md">
+        <h2 className="mb-2 text-2xl font-semibold tracking-tight">Private access</h2>
+        <p className="mb-8 text-sm text-black/70">Loading...</p>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
