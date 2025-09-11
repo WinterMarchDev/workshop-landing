@@ -180,7 +180,7 @@ function SlidesWithNotes() {
 function NotesPanel({ frameId }: { frameId: string | null }) {
   const field = frameId ? `notes:${frameId}` : null;
   const liveblocksExt = useLiveblocksExtension(
-    field ? { field, initialContent: "<p>Presenter notes…</p>" } : null
+    field ? { field, initialContent: "<p>Presenter notes…</p>" } : undefined
   );
 
   const editor = useEditor(
