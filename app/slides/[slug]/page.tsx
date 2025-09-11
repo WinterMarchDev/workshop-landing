@@ -37,7 +37,7 @@ function SlidesWithNotes() {
   // Track selection for notes
   useEffect(() => {
     if (!editor) return;
-    const off = editor.on("change", () => {
+    const unsubscribe = editor.on("change", () => {
       const sel = editor.getSelectedShapes();
       let frameId: string | null = null;
       if (sel.length) {
@@ -48,7 +48,7 @@ function SlidesWithNotes() {
       }
       setCurrentFrameId(frameId);
     });
-    return () => off();
+    return unsubscribe;
   }, [editor]);
 
   // Sync tldraw with Yjs for persistence
