@@ -11,18 +11,16 @@ import {
 export function Room({
   roomId,
   children,
-  initialStorage = {},
 }: {
   roomId: string;
   children: ReactNode;
-  initialStorage?: any;
 }) {
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
       <RoomProvider
         id={roomId}
         initialPresence={{ cursor: null }}
-        initialStorage={initialStorage}
+        initialStorage={() => ({})}
       >
         <ClientSideSuspense fallback={<div>Loading…</div>}>
           {children}
