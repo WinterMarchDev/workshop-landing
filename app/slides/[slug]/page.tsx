@@ -37,18 +37,33 @@ function SlidesWithNotes() {
   // Track selection for notes
   useEffect(() => {
     if (!editor) return;
-    const unsubscribe = editor.on("change", () => {
+
+    const handler = () => {
       const sel = editor.getSelectedShapes();
       let frameId: string | null = null;
+
       if (sel.length) {
         const frame = sel.find((s) => s.type === "frame");
-        frameId = frame ? frame.id : editor.getShape(sel[0].parentId!)?.type === "frame"
-          ? editor.getShape(sel[0].parentId!)!.id
-          : null;
+        if (frame) {
+          frameId = frame.id;
+        } else {
+          const pId = sel[0].parentId;
+          if (pId) {
+            const p = editor.getShape(pId);
+            if (p && p.type === "frame") frameId = p.id;
+          }
+        }
       }
+
       setCurrentFrameId(frameId);
-    });
-    return unsubscribe;
+    };
+
+    editor.on("change", handler);
+    handler(); // set initial state
+
+    return () => {
+      editor.off("change", handler);
+    };
   }, [editor]);
 
   // Sync tldraw with Yjs for persistence
