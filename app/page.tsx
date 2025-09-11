@@ -3,8 +3,7 @@ import { logout } from "./server/auth";
 import { PasswordProtectedLink } from "./components/PasswordProtectedLink";
 
 const projects = [
-  { slug:"vendor-advance", name:"Gamified Invoice Factoring", summary:"Interactive presentation on vendor financing partnership model.", href:"/docs/vendor-advance" },
-  { slug:"vendor-advance-slides", name:"Vendor Advance Slides", summary:"Collaborative whiteboard for vendor financing presentation.", href:"/slides/vendor-advance" },
+  { slug:"vendor-advance", name:"Gamified Invoice Factoring", summary:"Interactive presentation on vendor financing partnership model.", href:"/slides/vendor-advance" },
   { slug:"example-1", name:"Jeremy Prime", summary:"Our 5-step method to digitally clone yourself for autonomous petty task completion.", href:"#" },
   { slug:"example-2", name:"Front Runner", summary:"Sub-mm Lidar + MTurk + HL VTOL = 92% accurate crop yield data ~120 days in advance.", href:"#" },
   { slug:"ppwr-compliance", name:"PPWR Compliance", summary:"Advanced AI guided material science models you can use to achieve compliance for your pack type.", href:"#" },
