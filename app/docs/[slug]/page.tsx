@@ -19,7 +19,7 @@ function Editor({ roomId }: { roomId: string }) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ history: true }),
+      StarterKit.configure({}), // history enabled by default
       Placeholder.configure({ placeholder: "Start typing…" }),
       liveblocks, // Liveblocks + TipTap integration
     ],
@@ -72,8 +72,8 @@ function Editor({ roomId }: { roomId: string }) {
   );
 }
 
-export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default function Page({ params }: { params: { slug: string } }) {
+  const { slug } = params;
   const roomId = `wm:docs:${slug}`;
 
   return (

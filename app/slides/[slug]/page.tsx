@@ -51,8 +51,8 @@ function useTldrawStoreWithLiveblocks(roomId: string) {
 }
 
 // ========== Page ==========
-export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default function Page({ params }: { params: { slug: string } }) {
+  const { slug } = params;
   const roomId = `wm:slides:${slug}`;
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
@@ -340,7 +340,7 @@ function NotesPanel({ frameId }: { frameId: string | null }) {
     field
       ? {
           extensions: [
-            StarterKit.configure({ history: true }),
+            StarterKit.configure({}), // history enabled by default
             TextStyle,
             Color.configure({ types: ["textStyle"] }),
             Placeholder.configure({ placeholder: "Presenter notes…" }),
