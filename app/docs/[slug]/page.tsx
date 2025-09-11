@@ -1,27 +1,37 @@
+// app/docs/[slug]/page.tsx
 "use client";
 
-import { useMemo, useEffect, useRef } from "react";
-import { LiveblocksProvider, RoomProvider, ClientSideSuspense } from "@liveblocks/react/suspense";
-import { useLiveblocksExtension, FloatingToolbar, FloatingThreads, FloatingComposer } from "@liveblocks/react-tiptap";
+import { use, useEffect, useRef } from "react";
+import { Room } from "../../Room";
+
+// TipTap imports
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import { useLiveblocksExtension, FloatingToolbar, FloatingThreads, FloatingComposer } from "@liveblocks/react-tiptap";
+import { useThreads, ClientSideSuspense } from "@liveblocks/react/suspense";
 
-function Editor({ roomId }: { roomId: string }) {
-  // Important: let Liveblocks own persistence; do NOT put a static `content` here.
-  // If you want default content for a *new* doc, use the extension's initialContent option below.
+export default function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
+  const roomId = `wm:docs:${slug}`;
+  return (
+    <Room roomId={roomId}>
+      <EditorShell />
+    </Room>
+  );
+}
+
+function EditorShell() {
   const liveblocks = useLiveblocksExtension({
-    field: "body", // supports multiple editors per room if needed
-    // Will only apply if the doc has never been edited:
-    initialContent: `<h1>Vendor Advance</h1><p>Paste or type. Everything syncs in real time.</p>`,
-    // offlineSupport_experimental: true, // optional: cached local load
+    field: "body",
+    initialContent: "<h1>Vendor Advance</h1><p>Paste or type…</p>",
   });
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({}), // history enabled by default
+      StarterKit.configure({}), // history config handled by StarterKit defaults
       Placeholder.configure({ placeholder: "Start typing…" }),
-      liveblocks, // Liveblocks + TipTap integration
+      liveblocks,
     ],
     editorProps: {
       attributes: {
@@ -60,29 +70,18 @@ function Editor({ roomId }: { roomId: string }) {
       });
   }, [editor]);
 
+  const { threads } = useThreads({ query: { resolved: false } });
+
   return (
     <div className="mx-auto max-w-5xl py-8">
       <EditorContent editor={editor} />
       <FloatingToolbar editor={editor} />
       <div className="mt-4 flex gap-4">
         <FloatingComposer editor={editor} style={{ width: 360 }} />
-        <FloatingThreads editor={editor} style={{ width: 360 }} />
+        <ClientSideSuspense fallback={null}>
+          <FloatingThreads editor={editor} threads={threads} style={{ width: 360 }} />
+        </ClientSideSuspense>
       </div>
     </div>
-  );
-}
-
-export default function Page({ params }: { params: { slug: string } }) {
-  const { slug } = params;
-  const roomId = `wm:docs:${slug}`;
-
-  return (
-    <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
-      <RoomProvider id={roomId} initialPresence={{ cursor: null }}>
-        <ClientSideSuspense fallback={<div className="p-6 text-gray-500">Loading editor…</div>}>
-          <Editor roomId={roomId} />
-        </ClientSideSuspense>
-      </RoomProvider>
-    </LiveblocksProvider>
   );
 }
