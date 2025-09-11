@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { LiveblocksProvider, RoomProvider, ClientSideSuspense } from "@liveblocks/react/suspense";
 import { useLiveblocksExtension, FloatingToolbar, FloatingThreads, FloatingComposer } from "@liveblocks/react-tiptap";
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -30,6 +30,35 @@ function Editor({ roomId }: { roomId: string }) {
       },
     },
   });
+
+  // Guard so we don't run the seeding more than once per mount
+  const seededRef = useRef(false);
+
+  useEffect(() => {
+    if (!editor || seededRef.current) return;
+
+    // If the Liveblocks-backed doc is empty, seed from the static HTML once
+    const isEmpty =
+      editor.state.doc.childCount === 1 &&
+      editor.state.doc.firstChild?.type.name === "paragraph" &&
+      editor.state.doc.firstChild.content.size === 0;
+
+    if (!isEmpty) return;
+
+    seededRef.current = true;
+
+    // Pull the legacy content from /public/vendor-advance-slides.html
+    fetch("/vendor-advance-slides.html")
+      .then((r) => r.text())
+      .then((html) => {
+        // Insert as the initial collaborative content
+        // false = do not create a separate history step for the seed
+        editor.commands.setContent(html, false);
+      })
+      .catch((err) => {
+        console.error("Seed fetch failed:", err);
+      });
+  }, [editor]);
 
   return (
     <div className="mx-auto max-w-5xl py-8">
