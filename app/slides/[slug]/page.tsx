@@ -11,9 +11,12 @@ import * as Y from "yjs";
 import { useRoom } from "@liveblocks/react/suspense";
 import { getYjsProviderForRoom } from "@liveblocks/yjs";
 
-// TipTap for notes (unchanged)
+// TipTap for notes
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Document from "@tiptap/extension-document";
+import Paragraph from "@tiptap/extension-paragraph";
+import Text from "@tiptap/extension-text";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
@@ -187,7 +190,10 @@ function NotesPanel({ frameId }: { frameId: string | null }) {
     field
       ? {
           extensions: [
-            StarterKit.configure({}),
+            Document,
+            Paragraph,
+            Text,
+            StarterKit.configure({ document: false, paragraph: false, text: false }),
             TextStyle,
             Color.configure({ types: ["textStyle"] }),
             Placeholder.configure({ placeholder: "Presenter notes…" }),
