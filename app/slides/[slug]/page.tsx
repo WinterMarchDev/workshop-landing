@@ -51,8 +51,9 @@ function useTldrawStoreWithLiveblocks(roomId: string) {
 }
 
 // ========== Page ==========
-export default function Page({ params }: { params: { slug: string } }) {
-  const roomId = useMemo(() => `wm:slides:${params.slug}`, [params.slug]);
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const roomId = `wm:slides:${slug}`;
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
       <RoomProvider id={roomId} initialPresence={{}}>
