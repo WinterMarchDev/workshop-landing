@@ -18,6 +18,7 @@
     "@tiptap/extension-placeholder": "^2.26.1",
     "@tiptap/react": "^2.26.1",
     "@tiptap/starter-kit": "^2.26.1",
+    "@tldraw/sync": "^3.15.4",
     "@tldraw/tldraw": "^3.15.4",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
