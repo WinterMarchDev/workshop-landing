@@ -72,8 +72,9 @@ function Editor({ roomId }: { roomId: string }) {
   );
 }
 
-export default function Page({ params }: { params: { slug: string } }) {
-  const roomId = useMemo(() => `wm:docs:${params.slug}`, [params.slug]);
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const roomId = `wm:docs:${slug}`;
 
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
