@@ -19,8 +19,8 @@ export async function submitFeedback(prev: State, formData: FormData): Promise<S
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-  const ua = (await headers()).get("user-agent") || "";
-  const referer = (await headers()).get("referer") || "";
+  const ua = headers().get("user-agent") || "";
+  const referer = headers().get("referer") || "";
 
   const { error } = await supabase.from("workshop_feedback").insert({ project, email, message, user_agent: ua, url: referer });
   if (error) return { ok:false, message:`Failed to save: ${error.message}`, project };
