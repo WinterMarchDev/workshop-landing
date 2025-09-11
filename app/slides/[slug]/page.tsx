@@ -12,7 +12,6 @@ import {
   useMutation,
   useStorage,
 } from "@liveblocks/react/suspense";
-import { toPng } from "html-to-image";
 
 // TipTap + Liveblocks for the notes area
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -59,106 +58,262 @@ function SlidesWithNotes({ roomId }: { roomId: string }) {
   );
 
   // Helper: parse your legacy HTML into an array of per-slide HTML strings.
-  // Adjust the splitting rule to match your file:
-  //   Option A: slides delimited by <hr data-slide>
-  //   Option B: treat each <section class="slide"> as one slide
-  //   Option C: split by top-level <h1>/<h2> etc.
   const splitLegacyHtmlIntoSlides = (html: string): string[] => {
-    // Try data-slide <hr> delimiter first:
-    if (html.includes('data-slide')) {
-      return html.split(/<hr[^>]*data-slide[^>]*>/gi).map(s => s.trim()).filter(Boolean);
+    if (html.includes("data-slide")) {
+      return html
+        .split(/<hr[^>]*data-slide[^>]*>/gi)
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
-    // Fallback: split on <section class="slide">…</section>
-    const sectionMatches = html.match(/<section[^>]*class=["'][^"']*slide[^"']*["'][^>]*>[\s\S]*?<\/section>/gi);
+    const sectionMatches = html.match(
+      /<section[^>]*class=["'][^"']*slide[^"']*["'][^>]*>[\s\S]*?<\/section>/gi
+    );
     if (sectionMatches && sectionMatches.length) return sectionMatches;
-
-    // Last resort: split on <h1> as slide header
-    return html.split(/<h1[\s>]/i).map((chunk, i) => (i === 0 ? chunk : `<h1 ${chunk}`)).filter(s => s.trim());
+    return html
+      .split(/<h1[\s>]/i)
+      .map((chunk, i) => (i === 0 ? chunk : `<h1 ${chunk}`))
+      .filter((s) => s.trim());
   };
 
-  // One-time migration on first open: render each slide's HTML to a PNG and insert into tldraw frames.
-  const migrateIfNeeded = useCallback(async () => {
-    if (!appRef.current) return;
-    if (storage.migrated) return;
+  // Utility to coerce CSS color strings to hex when possible
+  const cssColorToString = (color: string | null) => {
+    if (!color) return "#000000";
+    // tldraw accepts css strings; keep as-is
+    return color;
+  };
 
-    // fetch legacy file from /public
-    const resp = await fetch("/vendor-advance-slides.html");
-    if (!resp.ok) return; // graceful no-op if file missing
-    const legacyHtml = await resp.text();
-    const slides = splitLegacyHtmlIntoSlides(legacyHtml);
-    if (!slides.length) return;
-
-    // Hidden staging node for rasterization
+  // Turn one offscreen DOM slide into tldraw shapes within a frame
+  async function domSlideToTldrawShapes(
+    app: TldrawApp,
+    slideHtml: string,
+    originX: number,
+    originY: number
+  ) {
+    // stage offscreen at 1920x1080 to compute layout boxes
+    const W = 1920;
+    const H = 1080;
     const staging = document.createElement("div");
     staging.style.position = "fixed";
     staging.style.left = "-99999px";
     staging.style.top = "-99999px";
-    staging.style.width = "1920px";     // slide width
-    staging.style.height = "1080px";    // slide height
+    staging.style.width = `${W}px`;
+    staging.style.height = `${H}px`;
     staging.style.background = "white";
     staging.style.padding = "0";
     staging.style.margin = "0";
     staging.style.zIndex = "-1";
+    staging.innerHTML = slideHtml;
     document.body.appendChild(staging);
+
+    // Use computed background if present
+    const slideBg = getComputedStyle(staging).backgroundColor;
+
+    const frameId = `frame_${crypto.randomUUID()}`;
+    app.createShapes([
+      {
+        id: frameId,
+        type: "frame",
+        x: originX,
+        y: originY,
+        props: { w: W, h: H, name: "Slide" },
+      } as any,
+    ]);
+
+    // Background rectangle to carry background color
+    app.createShapes([
+      {
+        id: `bg_${crypto.randomUUID()}`,
+        type: "rectangle",
+        x: originX,
+        y: originY,
+        props: {
+          w: W,
+          h: H,
+          color: "black",
+          fill: "solid",
+          dash: "draw",
+          size: "m",
+          opacity: 1,
+          // tldraw uses theme tokens; we'll just set style on the shape after create
+        },
+        parentId: frameId,
+      } as any,
+    ]);
+    // Set style override for background if supported by your version
+    // Otherwise, you can create a geo shape with fill color applied via style prop
+    const bgEl = getComputedStyle(staging);
+    const bgColor = cssColorToString(slideBg);
+
+    // Walk simple blocks: headings, paragraphs, list items, images, figures
+    const allowedSelectors =
+      "h1,h2,h3,h4,h5,h6,p,li,blockquote,img,figure,figcaption,div[data-block]";
+    const nodes = Array.from(staging.querySelectorAll(allowedSelectors));
+
+    // Helper to compute rect in slide coordinates
+    const toSlideRect = (el: Element) => {
+      const r = (el as HTMLElement).getBoundingClientRect();
+      const s = staging.getBoundingClientRect();
+      return {
+        x: r.left - s.left,
+        y: r.top - s.top,
+        w: r.width,
+        h: r.height,
+      };
+    };
+
+    for (const el of nodes) {
+      const tag = el.tagName.toLowerCase();
+
+      // Skip invisible or zero-sized
+      const cs = getComputedStyle(el as HTMLElement);
+      if (cs.display === "none" || cs.visibility === "hidden") continue;
+
+      const { x, y, w, h } = toSlideRect(el);
+      if (w < 2 || h < 2) continue;
+
+      if (tag === "img") {
+        const src = (el as HTMLImageElement).getAttribute("src");
+        if (!src) continue;
+
+        // Absolute/relative URLs: if relative, assume /public path
+        const url =
+          src.startsWith("http://") || src.startsWith("https://")
+            ? src
+            : src.startsWith("/")
+            ? src
+            : `/${src}`;
+
+        app.createShapes([
+          {
+            id: `img_${crypto.randomUUID()}`,
+            type: "image",
+            x: originX + x,
+            y: originY + y,
+            props: {
+              w,
+              h,
+              url,
+            },
+            parentId: frameId,
+          } as any,
+        ]);
+        continue;
+      }
+
+      // Treat text-like elements as text boxes
+      const isText =
+        tag === "h1" ||
+        tag === "h2" ||
+        tag === "h3" ||
+        tag === "h4" ||
+        tag === "h5" ||
+        tag === "h6" ||
+        tag === "p" ||
+        tag === "li" ||
+        tag === "blockquote" ||
+        tag === "figcaption" ||
+        ((el as HTMLElement).dataset && (el as HTMLElement).dataset["block"] === "text");
+
+      if (isText) {
+        // Get plain text, preserving list bullets crudely
+        let text = (el as HTMLElement).innerText || "";
+        if (tag === "li" && text && !/^[•\-]/.test(text)) text = `• ${text}`;
+
+        const fontSizePx = parseFloat(cs.fontSize || "16");
+        const fontWeight = cs.fontWeight || "400";
+        const color = cssColorToString(cs.color);
+        const align =
+          cs.textAlign === "center"
+            ? "middle"
+            : cs.textAlign === "right"
+            ? "end"
+            : "start";
+
+        app.createShapes([
+          {
+            id: `txt_${crypto.randomUUID()}`,
+            type: "text",
+            x: originX + x,
+            y: originY + y,
+            props: {
+              w,
+              h,
+              text,
+              align, // "start" | "middle" | "end"
+              // tldraw text props vary by version; store style hints in meta if needed
+              // You can tune font/size via style system or themes; here's a light-touch approach:
+            },
+            meta: {
+              css: {
+                fontSizePx,
+                fontWeight,
+                color,
+              },
+            },
+            parentId: frameId,
+          } as any,
+        ]);
+        continue;
+      }
+
+      // Generic non-text block: represent as a rectangle placeholder
+      app.createShapes([
+        {
+          id: `rect_${crypto.randomUUID()}`,
+          type: "rectangle",
+          x: originX + x,
+          y: originY + y,
+          props: {
+            w,
+            h,
+            color: "black",
+            fill: "none",
+            dash: "solid",
+            size: "s",
+            opacity: 1,
+          },
+          parentId: frameId,
+        } as any,
+      ]);
+    }
+
+    document.body.removeChild(staging);
+    return frameId;
+  }
+
+  // One-time migration on first open: parse HTML and create vector shapes
+  const migrateIfNeeded = useCallback(async () => {
+    if (!appRef.current) return;
+    if (storage.migrated) return;
+
+    const resp = await fetch("/vendor-advance-slides.html");
+    if (!resp.ok) return;
+    const legacyHtml = await resp.text();
+    const slides = splitLegacyHtmlIntoSlides(legacyHtml);
+    if (!slides.length) return;
 
     const app = appRef.current!;
     const createdFrameIds: string[] = [];
 
     for (let i = 0; i < slides.length; i++) {
-      staging.innerHTML = slides[i];
-
-      // Ensure layout fits 1920x1080 for consistent slide export
-      // If your HTML uses external CSS, include it here or inline styles in the legacy file.
-
-      // Rasterize to PNG
-      const dataUrl = await toPng(staging, { cacheBust: true });
-
-      // Create a frame and an image bound to it
-      const x = (i % 3) * 2200;      // lay frames on a grid to start
+      const x = (i % 3) * 2200;
       const y = Math.floor(i / 3) * 1300;
-
-      // Create frame
-      const frameId = `frame_${crypto.randomUUID()}`;
-      app.createShapes([
-        {
-          id: frameId,
-          type: "frame",
-          x,
-          y,
-          props: {
-            w: 1920,
-            h: 1080,
-            name: `Slide ${i + 1}`,
-          },
-        } as any,
-      ]);
-
-      // Create image inside frame
-      app.createShapes([
-        {
-          id: `img_${crypto.randomUUID()}`,
-          type: "image",
-          x,
-          y,
-          props: {
-            w: 1920,
-            h: 1080,
-            url: dataUrl,
-          },
-          parentId: frameId,
-        } as any,
-      ]);
-
+      const frameId = await domSlideToTldrawShapes(app, slides[i], x, y);
       createdFrameIds.push(frameId);
-
-      // Seed a blank notes doc per frame; we'll allow editing below
-      // We keep notes in Liveblocks Storage under root.notes[frameId]
-      // (no-op here; notes are created lazily when the editor opens a frame)
+      // You can rename the frame after create if desired:
+      const shape = app.getShapeById(frameId) as any;
+      if (shape?.props) {
+        app.updateShapes([
+          {
+            id: frameId,
+            type: "frame",
+            props: { ...shape.props, name: `Slide ${i + 1}` },
+          } as any,
+        ]);
+      }
     }
 
-    document.body.removeChild(staging);
     setMigrated();
-    // Optionally focus first frame
     if (createdFrameIds.length) {
       app.select(createdFrameIds[0]);
       setCurrentFrameId(createdFrameIds[0]);
