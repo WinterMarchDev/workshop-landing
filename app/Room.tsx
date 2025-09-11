@@ -20,7 +20,6 @@ export function Room({
       <RoomProvider
         id={roomId}
         initialPresence={{ cursor: null }}
-        initialStorage={() => ({})}
       >
         <ClientSideSuspense fallback={<div>Loading…</div>}>
           {children}
