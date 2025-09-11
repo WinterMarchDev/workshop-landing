@@ -1,18 +1,11 @@
 // liveblocks.config.ts
-// Types for presence & user metadata (names/avatars show up in cursors/comments/history)
 declare global {
   interface Liveblocks {
     Presence: { cursor: { x: number; y: number } | null };
-    Storage: { 
-      snapshot: any | null;
-      meta: Map<string, any>;
-      notes: Map<string, any>;
-      cover?: string;
-    };
-    UserMeta: {
-      id: string;
-      info: { name: string; avatar?: string };
-    };
+    UserMeta: { id: string; info: { name: string; avatar?: string } };
+    // Do NOT declare Storage unless you really need strong typing.
+    // If you insist, it MUST be LSON-safe, e.g.:
+    // Storage: { migrated?: boolean };
   }
 }
 export {};
