@@ -4,7 +4,7 @@
 import { use, useEffect, useMemo, useState, useCallback } from "react";
 import { Room } from "../../Room";
 
-import { Tldraw, Editor as TLEditor } from "tldraw";
+import { Tldraw, Editor as TLEditor, createShapeId, TLShapeId } from "tldraw";
 import "tldraw/tldraw.css";
 
 import * as Y from "yjs";
@@ -113,7 +113,9 @@ function SlidesWithNotes() {
             
             slides.forEach((slide, index) => {
               // Create a frame for each slide
-              const frameId = e.createShape({
+              const frameId: TLShapeId = createShapeId(`frame_${index}_${Date.now()}`);
+              e.createShapes([{
+                id: frameId,
                 type: 'frame',
                 x: index * 1200,
                 y: 0,
@@ -122,16 +124,17 @@ function SlidesWithNotes() {
                   h: 700,
                   name: `Slide ${index + 1}`,
                 },
-              }).id;
+              }]);
               
               // Extract and add text content from the slide
               const textElements = slide.querySelectorAll('h1, h2, h3, p, li');
               let yOffset = 50;
               
-              textElements.forEach(elem => {
+              textElements.forEach((elem, elemIndex) => {
                 const text = elem.textContent?.trim();
                 if (text) {
-                  e.createShape({
+                  e.createShapes([{
+                    id: createShapeId(`text_${index}_${elemIndex}_${Date.now()}`),
                     type: 'text',
                     x: (index * 1200) + 50,
                     y: yOffset,
@@ -143,7 +146,7 @@ function SlidesWithNotes() {
                             elem.tagName === 'H3' ? 'm' : 's',
                       w: 1000,
                     },
-                  });
+                  }]);
                   yOffset += elem.tagName.startsWith('H') ? 80 : 40;
                 }
               });
