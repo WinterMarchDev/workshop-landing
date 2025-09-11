@@ -34,16 +34,9 @@ function SlidesWithNotes() {
   const [editor, setEditor] = useState<TLEditor | null>(null);
   const [currentFrameId, setCurrentFrameId] = useState<string | null>(null);
 
+  // Track selection for notes
   useEffect(() => {
-    if (!editor || !room) return;
-    const yProvider = getYjsProviderForRoom(room);
-    const ydoc: Y.Doc = yProvider.getYDoc();
-
-    // Bind your tldraw store/editor to Yjs here.
-    // If you're snapshotting into Yjs yourself, wire up listeners bi-directionally.
-    // Otherwise, use tldraw's snapshot helpers to serialize into a yMap.
-
-    // Example: track selection to drive notes
+    if (!editor) return;
     const off = editor.on("change", () => {
       const sel = editor.getSelectedShapes();
       let frameId: string | null = null;
@@ -55,14 +48,40 @@ function SlidesWithNotes() {
       }
       setCurrentFrameId(frameId);
     });
-
     return () => off();
+  }, [editor]);
+
+  // Sync tldraw with Yjs for persistence
+  useEffect(() => {
+    if (!editor || !room) return;
+    const yProvider = getYjsProviderForRoom(room);
+    const ydoc = yProvider.getYDoc();
+    const yMap = ydoc.getMap<any>("tldraw");
+
+    // Lazy import to avoid ESM issues
+    const { getSnapshot, loadSnapshot } = require("tldraw");
+
+    const applyFromY = () => {
+      const snap = yMap.get("document");
+      if (snap) loadSnapshot(editor.store, snap);
+    };
+    yMap.observeDeep(applyFromY);
+
+    const unsub = editor.store.listen(
+      () => {
+        const { document } = getSnapshot(editor.store);
+        yMap.set("document", document);
+      },
+      { source: "user" }
+    );
+
+    return () => {
+      unsub();
+      yMap.unobserveDeep(applyFromY);
+    };
   }, [editor, room]);
 
-  const handleMount = useCallback((e: TLEditor) => {
-    setEditor(e);
-    
-    // One-time migration for vendor-advance deck
+  const runMigrationOnce = useCallback((e: TLEditor) => {
     const slug = window.location.pathname.split('/').pop();
     if (slug === 'vendor-advance') {
       // Check if deck is empty (only has default content)
@@ -124,6 +143,11 @@ function SlidesWithNotes() {
       }
     }
   }, []);
+
+  const handleMount = useCallback((e: TLEditor) => {
+    setEditor(e);
+    runMigrationOnce(e);
+  }, [runMigrationOnce]);
 
   return (
     <div className="grid grid-rows-[1fr_auto] h-screen">
