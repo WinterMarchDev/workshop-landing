@@ -9,7 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@liveblocks/client": "^3.7.0",
+    "@liveblocks/node": "^3.7.0",
+    "@liveblocks/react": "^3.7.0",
+    "@liveblocks/react-tiptap": "^3.7.0",
+    "@liveblocks/react-ui": "^3.7.0",
     "@supabase/supabase-js": "^2.39.0",
+    "@tiptap/extension-placeholder": "^2.26.1",
+    "@tiptap/react": "^2.26.1",
+    "@tiptap/starter-kit": "^2.26.1",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
     "next": "15.1.0",
