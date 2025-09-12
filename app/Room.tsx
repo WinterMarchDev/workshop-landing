@@ -17,7 +17,16 @@ export function Room({
 }) {
   return (
     <LiveblocksProvider 
-      authEndpoint="/api/liveblocks-auth"
+      authEndpoint={async (roomId) => {
+        const res = await fetch('/api/liveblocks-auth', {
+          method: 'POST',
+          credentials: 'include', // send wm_sess cookie
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room: roomId }),
+        });
+        if (!res.ok) throw new Error('Liveblocks auth failed');
+        return res.json(); // token payload
+      }}
       // Handle large messages by logging warnings instead of throwing
       throttle={16}
     >

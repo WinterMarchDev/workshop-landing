@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { Liveblocks } from "@liveblocks/node";
 import { verifyWmSession } from "@/lib/auth";
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   const secret = process.env.LIVEBLOCKS_SECRET_KEY;
   if (!secret) {
