@@ -191,7 +191,9 @@ function SlidesWithNotes() {
       fitCameraToFrame(editor, first.id as TLShapeId);
     }
 
-    return () => editor.off("change", handler);
+    return () => {
+      editor.off("change", handler);
+    };
   }, [editor, currentFrameId]);
 
   // Sync tldraw with Yjs for persistence
