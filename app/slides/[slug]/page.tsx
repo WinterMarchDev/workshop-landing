@@ -4,7 +4,7 @@
 import { use, useEffect, useMemo, useState, useCallback } from "react";
 import { Room } from "../../Room";
 
-import { Tldraw, Editor as TLEditor, createShapeId, TLShapeId } from "tldraw";
+import { Tldraw, Editor as TLEditor, createShapeId, TLShapeId, toRichText } from "tldraw";
 import "tldraw/tldraw.css";
 
 import * as Y from "yjs";
@@ -189,27 +189,30 @@ function SlidesWithNotes() {
                 textElements.forEach((elem, elemIndex) => {
                   const text = elem.textContent?.trim();
                   if (text) {
-                    // Use note shape for text content
-                    const textShapeId = createShapeId(`note_${index}_${elemIndex}_${Date.now()}`);
+                    // Use geo shape with richText for text content
+                    const textShapeId = createShapeId(`text_${index}_${elemIndex}_${Date.now()}`);
                     e.createShape({
                       id: textShapeId,
-                      type: 'note',
+                      type: 'geo',
                       x: (index * 1200) + 50,
                       y: yOffset,
                       parentId: frameId,
                       props: {
-                        text: text,
+                        geo: 'rectangle',
+                        fill: 'none',
+                        color: 'black',
                         size: elem.tagName === 'H1' ? 'xl' : 
                               elem.tagName === 'H2' ? 'l' : 
                               elem.tagName === 'H3' ? 'm' : 's',
                         font: 'sans',
                         align: 'start',
-                        color: 'black',
+                        verticalAlign: 'start',
                         w: 1000,
-                        h: elem.tagName.startsWith('H') ? 100 : 60,
+                        h: elem.tagName.startsWith('H') ? 80 : 60,
+                        richText: toRichText(text),  // Use richText with toRichText()
                       },
                     });
-                    yOffset += elem.tagName.startsWith('H') ? 120 : 80;
+                    yOffset += elem.tagName.startsWith('H') ? 100 : 70;
                   }
                 });
               });
@@ -252,39 +255,45 @@ function SlidesWithNotes() {
                   },
                 });
                 
-                // Add title using note shape
+                // Add title using geo shape with richText
                 e.createShape({
                   id: createShapeId(`title_${index}`),
-                  type: 'note',
+                  type: 'geo',
                   x: (index * 1200) + 50,
                   y: 50,
                   parentId: frameId,
                   props: {
-                    text: slide.title,
+                    geo: 'rectangle',
+                    fill: 'none',
+                    color: 'black',
                     size: 'xl',
                     font: 'sans',
                     align: 'start',
-                    color: 'black',
+                    verticalAlign: 'start',
                     w: 1000,
-                    h: 100,
+                    h: 80,
+                    richText: toRichText(slide.title),
                   },
                 });
                 
-                // Add content using note shape
+                // Add content using geo shape with richText
                 e.createShape({
                   id: createShapeId(`content_${index}`),
-                  type: 'note',
+                  type: 'geo',
                   x: (index * 1200) + 50,
-                  y: 180,
+                  y: 150,
                   parentId: frameId,
                   props: {
-                    text: slide.content,
+                    geo: 'rectangle',
+                    fill: 'none',
+                    color: 'black',
                     size: 'm',
                     font: 'sans',
                     align: 'start',
-                    color: 'black',
+                    verticalAlign: 'start',
                     w: 1000,
                     h: 200,
+                    richText: toRichText(slide.content),
                   },
                 });
               });
