@@ -189,30 +189,27 @@ function SlidesWithNotes() {
                 textElements.forEach((elem, elemIndex) => {
                   const text = elem.textContent?.trim();
                   if (text) {
-                    // Use geo shape with text for plain strings (text shape requires richText)
-                    const textShapeId = createShapeId(`text_${index}_${elemIndex}_${Date.now()}`);
+                    // Use note shape for text content
+                    const textShapeId = createShapeId(`note_${index}_${elemIndex}_${Date.now()}`);
                     e.createShape({
                       id: textShapeId,
-                      type: 'geo',
+                      type: 'note',
                       x: (index * 1200) + 50,
                       y: yOffset,
                       parentId: frameId,
                       props: {
-                        geo: 'rectangle',
-                        w: 1000,
-                        h: elem.tagName.startsWith('H') ? 60 : 40,
-                        fill: 'none',
-                        color: 'black',
+                        text: text,
                         size: elem.tagName === 'H1' ? 'xl' : 
                               elem.tagName === 'H2' ? 'l' : 
                               elem.tagName === 'H3' ? 'm' : 's',
                         font: 'sans',
-                        text: text,  // geo shapes accept plain text strings
                         align: 'start',
-                        verticalAlign: 'start',
+                        color: 'black',
+                        w: 1000,
+                        h: elem.tagName.startsWith('H') ? 100 : 60,
                       },
                     });
-                    yOffset += elem.tagName.startsWith('H') ? 80 : 50;
+                    yOffset += elem.tagName.startsWith('H') ? 120 : 80;
                   }
                 });
               });
@@ -255,45 +252,39 @@ function SlidesWithNotes() {
                   },
                 });
                 
-                // Add title using geo shape
+                // Add title using note shape
                 e.createShape({
                   id: createShapeId(`title_${index}`),
-                  type: 'geo',
+                  type: 'note',
                   x: (index * 1200) + 50,
                   y: 50,
                   parentId: frameId,
                   props: {
-                    geo: 'rectangle',
-                    w: 1000,
-                    h: 60,
-                    fill: 'none',
-                    color: 'black',
+                    text: slide.title,
                     size: 'xl',
                     font: 'sans',
-                    text: slide.title,
                     align: 'start',
-                    verticalAlign: 'start',
+                    color: 'black',
+                    w: 1000,
+                    h: 100,
                   },
                 });
                 
-                // Add content using geo shape
+                // Add content using note shape
                 e.createShape({
                   id: createShapeId(`content_${index}`),
-                  type: 'geo',
+                  type: 'note',
                   x: (index * 1200) + 50,
-                  y: 150,
+                  y: 180,
                   parentId: frameId,
                   props: {
-                    geo: 'rectangle',
-                    w: 1000,
-                    h: 200,
-                    fill: 'none',
-                    color: 'black',
+                    text: slide.content,
                     size: 'm',
                     font: 'sans',
-                    text: slide.content,
                     align: 'start',
-                    verticalAlign: 'start',
+                    color: 'black',
+                    w: 1000,
+                    h: 200,
                   },
                 });
               });
