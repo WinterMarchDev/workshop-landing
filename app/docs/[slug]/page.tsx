@@ -29,7 +29,7 @@ function EditorShell() {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ history: false }),
       Placeholder.configure({ placeholder: "Start typing…" }),
       liveblocks,
     ],

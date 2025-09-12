@@ -107,7 +107,8 @@ async function rasterizeSlideHTMLIntoFrame(
   x: number,
   y: number,
   W = 1920,
-  H = 1080
+  H = 1080,
+  slideIndex?: number
 ) {
   const staging = document.createElement("div");
   staging.style.position = "fixed";
@@ -120,8 +121,21 @@ async function rasterizeSlideHTMLIntoFrame(
   document.body.appendChild(staging);
 
   try {
-    const url = await toPng(staging, { cacheBust: true });
+    const dataUrl = await toPng(staging, { cacheBust: true, pixelRatio: 2 });
     document.body.removeChild(staging);
+
+    // Upload the image to Supabase Storage
+    const up = await fetch("/api/slides/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataUrl,
+        key: slideIndex !== undefined 
+          ? `vendor-advance/slide-${String(slideIndex + 1).padStart(2, "0")}.png`
+          : `vendor-advance/slide-${Date.now()}.png`,
+      }),
+    });
+    const { url: publicUrl } = await up.json();
 
     editor.createShape({
       id: createShapeId(`img_${Date.now()}`),
@@ -129,7 +143,7 @@ async function rasterizeSlideHTMLIntoFrame(
       x,
       y,
       parentId: frameId,
-      props: { w: W, h: H, url },
+      props: { w: W, h: H, url: publicUrl },
     });
   } catch (err) {
     console.error('Failed to rasterize slide:', err);
@@ -203,6 +217,8 @@ function SlidesWithNotes() {
     const ydoc = yProvider.getYDoc();
     const yMap = ydoc.getMap<any>("tldraw");
 
+    let syncing = true;       // true while migration runs
+    let raf = 0;
     let unsub: (() => void) | null = null;
     let unobserve: (() => void) | null = null;
 
@@ -210,24 +226,34 @@ function SlidesWithNotes() {
       const { getSnapshot, loadSnapshot } = await import("tldraw");
 
       const applyFromY = () => {
+        if (syncing) return;
         const snap = yMap.get("document");
         if (snap) loadSnapshot(editor.store, snap);
       };
       yMap.observeDeep(applyFromY);
       unobserve = () => yMap.unobserveDeep(applyFromY);
 
-      unsub = editor.store.listen(
-        () => {
+      const push = () => {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
           const { document } = getSnapshot(editor.store);
           yMap.set("document", document);
-        },
-        { source: "user" }
-      );
+        });
+      };
+
+      unsub = editor.store.listen(push, { source: "user" });
+
+      // expose a way for migration to flip syncing off when done
+      (window as any).__wm_end_migration__ = () => { 
+        syncing = false; 
+        push(); 
+      };
     })();
 
     return () => {
       if (unsub) unsub();
       if (unobserve) unobserve();
+      cancelAnimationFrame(raf);
     };
   }, [editor, room]);
 
@@ -363,7 +389,7 @@ function SlidesWithNotes() {
                 
                 // If no content was added, rasterize the slide
                 if (added === 0) {
-                  await rasterizeSlideHTMLIntoFrame(e, slide.outerHTML || slide.innerHTML, frameId, x, y, W, H);
+                  await rasterizeSlideHTMLIntoFrame(e, slide.outerHTML || slide.innerHTML, frameId, x, y, W, H, i);
                 }
                 
                 made.push(frameId);
@@ -375,6 +401,9 @@ function SlidesWithNotes() {
                 setCurrentFrameId(made[0]);
                 fitCameraToFrame(e, made[0]);
               }
+              
+              // End migration mode to enable syncing
+              (window as any).__wm_end_migration__?.();
               
               console.log('Import complete!');
             })
@@ -624,7 +653,7 @@ function NotesEditor({ frameId }: { frameId: string }) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ history: false }),
       TextStyle,
       Color.configure({ types: ["textStyle"] }),
       Placeholder.configure({ placeholder: "Presenter notes…" }),
