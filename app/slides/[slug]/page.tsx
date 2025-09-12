@@ -106,39 +106,60 @@ function SlidesWithNotes() {
           console.log('Importing vendor-advance slides...', { shapes: shapes.length, hasFrames });
           
           // Fetch and parse the static HTML to seed the deck
+          console.log('Starting fetch of /vendor-advance-slides.html');
           fetch('/vendor-advance-slides.html')
             .then(r => {
+              console.log('Fetch response:', r.status, r.statusText);
               if (!r.ok) throw new Error(`HTTP ${r.status}`);
               return r.text();
             })
             .then(html => {
-              console.log('HTML fetched, length:', html.length);
-              console.log('HTML sample:', html.substring(0, 500));
+              console.log('HTML fetched successfully, length:', html.length);
+              
+              // If HTML is too short, something's wrong
+              if (html.length < 1000) {
+                console.error('HTML seems too short:', html);
+                throw new Error('HTML file appears to be empty or truncated');
+              }
               
               // Parse HTML and create tldraw shapes
               const parser = new DOMParser();
               const doc = parser.parseFromString(html, 'text/html');
               
-              // Try different selectors
+              // Debug: show what we parsed
+              console.log('Parsed document body children:', doc.body?.children.length);
+              console.log('Body innerHTML sample:', doc.body?.innerHTML?.substring(0, 500));
+              
+              // Look for slides with multiple approaches
               let slides = doc.querySelectorAll('div.slide');
-              console.log(`Found ${slides.length} slides with div.slide selector`);
+              console.log(`Method 1 - div.slide: found ${slides.length}`);
               
               if (slides.length === 0) {
+                // Try without the div qualifier
                 slides = doc.querySelectorAll('.slide');
-                console.log(`Found ${slides.length} slides with .slide selector`);
+                console.log(`Method 2 - .slide: found ${slides.length}`);
               }
               
               if (slides.length === 0) {
-                // Try to find any divs with slide in class
-                const allDivs = doc.querySelectorAll('div');
-                const slideDivs = Array.from(allDivs).filter(div => 
-                  div.className && div.className.includes('slide')
-                );
-                console.log(`Found ${slideDivs.length} divs with 'slide' in className`);
-                slides = slideDivs;
+                // Look in the presentation container
+                const container = doc.querySelector('.presentation-container');
+                if (container) {
+                  slides = container.querySelectorAll('.slide');
+                  console.log(`Method 3 - .presentation-container .slide: found ${slides.length}`);
+                }
               }
               
-              console.log(`Processing ${slides.length} slides to import`);
+              if (slides.length === 0) {
+                // Just find any element with slide in the class
+                const allElements = doc.querySelectorAll('*');
+                const slideElements = Array.from(allElements).filter(el => 
+                  el.className && typeof el.className === 'string' && el.className.includes('slide')
+                );
+                console.log(`Method 4 - any element with 'slide' class: found ${slideElements.length}`);
+                slides = slideElements.filter(el => !el.className.includes('slide-number'));
+              }
+              
+              console.log(`Final: Processing ${slides.length} slides`);
               
               // Clear existing shapes if needed
               if (shapes.length > 0) {
@@ -192,6 +213,69 @@ function SlidesWithNotes() {
             })
             .catch(err => {
               console.error('Failed to seed deck from HTML:', err);
+              console.error('Error details:', err.message, err.stack);
+              
+              // Fallback: Create some basic slides manually
+              console.log('Using fallback slide creation...');
+              const fallbackSlides = [
+                { title: 'Vendor Advance Partnership', content: 'Strategic Vendor Behavior Management Through Financial Innovation' },
+                { title: 'The Challenge', content: 'Your vendors face serious cash flow challenges with Net 60-90 payment terms' },
+                { title: 'The Solution', content: 'Support vendors while driving performance with 3% advance rates' },
+                { title: 'How It Works', content: 'Vendors submit invoices and receive 97% payment within 24 hours' },
+                { title: 'Benefits for CheckSammy', content: '34% after-tax returns through partnership structure' },
+              ];
+              
+              // Clear any existing shapes
+              const currentShapes = e.getCurrentPageShapes();
+              if (currentShapes.length > 0) {
+                e.deleteShapes(currentShapes.map(s => s.id));
+              }
+              
+              fallbackSlides.forEach((slide, index) => {
+                const frameId: TLShapeId = createShapeId(`frame_${index}`);
+                e.createShapes([{
+                  id: frameId,
+                  type: 'frame',
+                  x: index * 1200,
+                  y: 0,
+                  props: {
+                    w: 1100,
+                    h: 700,
+                    name: `Slide ${index + 1}`,
+                  },
+                }]);
+                
+                // Add title
+                e.createShapes([{
+                  id: createShapeId(`title_${index}`),
+                  type: 'text',
+                  x: (index * 1200) + 50,
+                  y: 50,
+                  parentId: frameId,
+                  props: {
+                    text: slide.title,
+                    size: 'xl',
+                    w: 1000,
+                  },
+                }]);
+                
+                // Add content
+                e.createShapes([{
+                  id: createShapeId(`content_${index}`),
+                  type: 'text',
+                  x: (index * 1200) + 50,
+                  y: 150,
+                  parentId: frameId,
+                  props: {
+                    text: slide.content,
+                    size: 'm',
+                    w: 1000,
+                  },
+                }]);
+              });
+              
+              e.zoomToFit();
+              console.log('Fallback slides created successfully');
             });
         } else {
           console.log('Deck already has content, skipping import');
