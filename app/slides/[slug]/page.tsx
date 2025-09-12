@@ -149,6 +149,7 @@ async function putRasterBackground(
   } catch (err) {
     console.error('Failed to rasterize slide:', err);
     if (staging.parentNode) document.body.removeChild(staging);
+    throw err; // Re-throw so migration can handle it
   }
 }
 
@@ -342,8 +343,13 @@ function SlidesWithNotes() {
                   props: { w: W, h: H, name: `Slide ${i + 1}` }
                 }]);
 
-                // Always put high-DPI background first
-                await putRasterBackground(e, slides[i].outerHTML || slides[i].innerHTML, frameId, x, y);
+                try {
+                  // Always put high-DPI background first
+                  await putRasterBackground(e, slides[i].outerHTML || slides[i].innerHTML, frameId, x, y);
+                } catch (uploadErr) {
+                  console.error(`Failed to upload slide ${i + 1} background:`, uploadErr);
+                  // Continue with other slides, frame will exist but without background
+                }
 
                 // overlay minimal editable text (optional)
                 const tmp = document.createElement("div");
