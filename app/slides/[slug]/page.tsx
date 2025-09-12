@@ -178,26 +178,6 @@ function SlidesWithNotes() {
 }
 
 function NotesPanel({ frameId }: { frameId: string | null }) {
-  const field = frameId ? `notes:${frameId}` : null;
-  const liveblocksExt = useLiveblocksExtension(
-    field ? { field, initialContent: "<p>Presenter notes…</p>" } : undefined
-  );
-
-  const editor = useEditor(
-    field
-      ? {
-          extensions: [
-            StarterKit,
-            TextStyle,
-            Color.configure({ types: ["textStyle"] }),
-            Placeholder.configure({ placeholder: "Presenter notes…" }),
-            liveblocksExt!,
-          ],
-          editorProps: { attributes: { class: "prose max-w-none p-4 outline-none" } },
-        }
-      : undefined
-  );
-
   if (!frameId) {
     return (
       <div className="p-4 text-sm text-gray-600">
@@ -205,10 +185,32 @@ function NotesPanel({ frameId }: { frameId: string | null }) {
       </div>
     );
   }
+  
+  return <NotesEditor frameId={frameId} />;
+}
+
+function NotesEditor({ frameId }: { frameId: string }) {
+  const field = `notes:${frameId}`;
+  const liveblocksExt = useLiveblocksExtension({
+    field,
+    initialContent: "<p>Presenter notes…</p>"
+  });
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      TextStyle,
+      Color.configure({ types: ["textStyle"] }),
+      Placeholder.configure({ placeholder: "Presenter notes…" }),
+      liveblocksExt,
+    ],
+    editorProps: { attributes: { class: "prose max-w-none p-4 outline-none" } },
+  });
+
   return (
     <div className="max-w-5xl mx-auto w-full">
       <div className="px-4 pt-3 text-xs text-gray-500">Notes for {frameId}</div>
-      <EditorContent editor={editor!} />
+      <EditorContent editor={editor} />
     </div>
   );
 }
