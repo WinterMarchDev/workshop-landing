@@ -568,12 +568,24 @@ function SlidesNav({ editor, currentFrameId }: { editor: TLEditor; currentFrameI
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") go(1);
-      if (e.key === "ArrowLeft") go(-1);
+      if (e.key === "ArrowRight") {
+        const n = frames[idx + 1];
+        if (n) {
+          editor.select(n.id);
+          fitCameraToFrame(editor, n.id as TLShapeId);
+        }
+      }
+      if (e.key === "ArrowLeft") {
+        const n = frames[idx - 1];
+        if (n) {
+          editor.select(n.id);
+          fitCameraToFrame(editor, n.id as TLShapeId);
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [idx, frames.length, go]);
+  }, [idx, frames, editor]);
 
   return (
     <div className="fixed bottom-[190px] left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl bg-white/90 px-4 py-2 shadow">
