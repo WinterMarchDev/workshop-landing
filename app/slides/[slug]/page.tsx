@@ -189,28 +189,30 @@ function SlidesWithNotes() {
                 textElements.forEach((elem, elemIndex) => {
                   const text = elem.textContent?.trim();
                   if (text) {
-                    // Create text shape with tldraw's expected format
+                    // Use geo shape with text for plain strings (text shape requires richText)
                     const textShapeId = createShapeId(`text_${index}_${elemIndex}_${Date.now()}`);
                     e.createShape({
                       id: textShapeId,
-                      type: 'text',
+                      type: 'geo',
                       x: (index * 1200) + 50,
                       y: yOffset,
                       parentId: frameId,
                       props: {
-                        // text content in tldraw goes in 'text' property as a string
-                        text: text || '',
-                        font: 'sans',
+                        geo: 'rectangle',
+                        w: 1000,
+                        h: elem.tagName.startsWith('H') ? 60 : 40,
+                        fill: 'none',
+                        color: 'black',
                         size: elem.tagName === 'H1' ? 'xl' : 
                               elem.tagName === 'H2' ? 'l' : 
                               elem.tagName === 'H3' ? 'm' : 's',
+                        font: 'sans',
+                        text: text,  // geo shapes accept plain text strings
                         align: 'start',
-                        color: 'black',
-                        w: 1000,
-                        autoSize: false,
+                        verticalAlign: 'start',
                       },
                     });
-                    yOffset += elem.tagName.startsWith('H') ? 80 : 40;
+                    yOffset += elem.tagName.startsWith('H') ? 80 : 50;
                   }
                 });
               });
@@ -253,39 +255,45 @@ function SlidesWithNotes() {
                   },
                 });
                 
-                // Add title
+                // Add title using geo shape
                 e.createShape({
                   id: createShapeId(`title_${index}`),
-                  type: 'text',
+                  type: 'geo',
                   x: (index * 1200) + 50,
                   y: 50,
                   parentId: frameId,
                   props: {
-                    text: slide.title || '',
-                    font: 'sans',
-                    size: 'xl',
-                    align: 'start',
-                    color: 'black',
+                    geo: 'rectangle',
                     w: 1000,
-                    autoSize: false,
+                    h: 60,
+                    fill: 'none',
+                    color: 'black',
+                    size: 'xl',
+                    font: 'sans',
+                    text: slide.title,
+                    align: 'start',
+                    verticalAlign: 'start',
                   },
                 });
                 
-                // Add content
+                // Add content using geo shape
                 e.createShape({
                   id: createShapeId(`content_${index}`),
-                  type: 'text',
+                  type: 'geo',
                   x: (index * 1200) + 50,
                   y: 150,
                   parentId: frameId,
                   props: {
-                    text: slide.content || '',
-                    font: 'sans',
-                    size: 'm',
-                    align: 'start',
-                    color: 'black',
+                    geo: 'rectangle',
                     w: 1000,
-                    autoSize: false,
+                    h: 200,
+                    fill: 'none',
+                    color: 'black',
+                    size: 'm',
+                    font: 'sans',
+                    text: slide.content,
+                    align: 'start',
+                    verticalAlign: 'start',
                   },
                 });
               });
