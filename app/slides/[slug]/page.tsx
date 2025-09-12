@@ -6,6 +6,7 @@ import { Room } from "../../Room";
 
 import { Tldraw, Editor as TLEditor, createShapeId, TLShapeId, toRichText } from "tldraw";
 import "tldraw/tldraw.css";
+import { toPng } from "html-to-image";
 
 import * as Y from "yjs";
 import { useRoom } from "@liveblocks/react/suspense";
@@ -18,6 +19,56 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
+
+// Camera helper to fit view to frame
+function fitCameraToFrame(editor: TLEditor, frameId: TLShapeId, inset = 96, leaveForNotes = 180) {
+  const b = editor.getShapePageBounds(frameId);
+  if (!b) return;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight - leaveForNotes; // leave space for notes bar
+  const z = Math.min((vw - inset * 2) / b.w, (vh - inset * 2) / b.h);
+  const cx = b.x + b.w / 2;
+  const cy = b.y + b.h / 2;
+  editor.setCamera({ x: cx - vw / (2 * z), y: cy - vh / (2 * z), z });
+}
+
+// Rasterize fallback for empty slides
+async function rasterizeSlideHTMLIntoFrame(
+  editor: TLEditor,
+  html: string,
+  frameId: TLShapeId,
+  x: number,
+  y: number,
+  W = 1920,
+  H = 1080
+) {
+  const staging = document.createElement("div");
+  staging.style.position = "fixed";
+  staging.style.left = "-99999px";
+  staging.style.top = "-99999px";
+  staging.style.width = `${W}px`;
+  staging.style.height = `${H}px`;
+  staging.style.background = "white";
+  staging.innerHTML = html;
+  document.body.appendChild(staging);
+
+  try {
+    const url = await toPng(staging, { cacheBust: true });
+    document.body.removeChild(staging);
+
+    editor.createShape({
+      id: createShapeId(`img_${Date.now()}`),
+      type: "image",
+      x,
+      y,
+      parentId: frameId,
+      props: { w: W, h: H, url },
+    });
+  } catch (err) {
+    console.error('Failed to rasterize slide:', err);
+    document.body.removeChild(staging);
+  }
+}
 
 export default function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -35,37 +86,46 @@ function SlidesWithNotes() {
   const [currentFrameId, setCurrentFrameId] = useState<string | null>(null);
   const [showImportButton, setShowImportButton] = useState(false);
 
-  // Track selection for notes
+  // Track selection for notes and camera
   useEffect(() => {
     if (!editor) return;
 
     const handler = () => {
       const sel = editor.getSelectedShapes();
-      let frameId: string | null = null;
-
+      let frameId: TLShapeId | null = null;
+      
       if (sel.length) {
         const frame = sel.find((s) => s.type === "frame");
         if (frame) {
-          frameId = frame.id;
+          frameId = frame.id as TLShapeId;
         } else {
           const pId = sel[0].parentId;
           if (pId) {
             const p = editor.getShape(pId);
-            if (p && p.type === "frame") frameId = p.id;
+            if (p && p.type === "frame") frameId = p.id as TLShapeId;
           }
         }
       }
-
-      setCurrentFrameId(frameId);
+      
+      if (frameId) {
+        setCurrentFrameId(frameId);
+        fitCameraToFrame(editor, frameId);
+      }
     };
 
     editor.on("change", handler);
-    handler(); // set initial state
 
-    return () => {
-      editor.off("change", handler);
-    };
-  }, [editor]);
+    // If we already have frames, center the first one at mount
+    const frames = editor.getCurrentPageShapes().filter((s) => s.type === "frame");
+    if (frames.length && !currentFrameId) {
+      const first = frames.sort((a, b) => ((a.y as number) - (b.y as number)) || ((a.x as number) - (b.x as number)))[0];
+      editor.select(first.id);
+      setCurrentFrameId(first.id as TLShapeId);
+      fitCameraToFrame(editor, first.id as TLShapeId);
+    }
+
+    return () => editor.off("change", handler);
+  }, [editor, currentFrameId]);
 
   // Sync tldraw with Yjs for persistence
   useEffect(() => {
@@ -167,35 +227,45 @@ function SlidesWithNotes() {
                 e.deleteShapes(shapes.map(s => s.id));
               }
               
-              slides.forEach((slide, index) => {
+              const W = 1920;
+              const H = 1080;
+              const GAP = 140;
+              const made: TLShapeId[] = [];
+              
+              for (let i = 0; i < slides.length; i++) {
+                const slide = slides[i];
+                const x = 0;
+                const y = i * (H + GAP);
+                
                 // Create a frame for each slide
-                const frameId: TLShapeId = createShapeId(`frame_${index}_${Date.now()}`);
+                const frameId: TLShapeId = createShapeId(`frame_${i}_${Date.now()}`);
                 e.createShape({
                   id: frameId,
                   type: 'frame',
-                  x: index * 1200,
-                  y: 0,
+                  x,
+                  y,
                   props: {
-                    w: 1100,
-                    h: 700,
-                    name: `Slide ${index + 1}`,
+                    w: W,
+                    h: H,
+                    name: `Slide ${i + 1}`,
                   },
                 });
                 
                 // Extract and add text content from the slide
                 const textElements = slide.querySelectorAll('h1, h2, h3, p, li');
                 let yOffset = 50;
+                let added = 0;
                 
                 textElements.forEach((elem, elemIndex) => {
                   const text = elem.textContent?.trim();
                   if (text) {
                     // Use geo shape with richText for text content
-                    const textShapeId = createShapeId(`text_${index}_${elemIndex}_${Date.now()}`);
+                    const textShapeId = createShapeId(`text_${i}_${elemIndex}_${Date.now()}`);
                     e.createShape({
                       id: textShapeId,
                       type: 'geo',
-                      x: (index * 1200) + 50,
-                      y: yOffset,
+                      x: x + 50,
+                      y: y + yOffset,
                       parentId: frameId,
                       props: {
                         geo: 'rectangle',
@@ -207,18 +277,31 @@ function SlidesWithNotes() {
                         font: 'sans',
                         align: 'start',
                         verticalAlign: 'start',
-                        w: 1000,
+                        w: W - 100,
                         h: elem.tagName.startsWith('H') ? 80 : 60,
-                        richText: toRichText(text),  // Use richText with toRichText()
+                        richText: toRichText(text),
                       },
                     });
                     yOffset += elem.tagName.startsWith('H') ? 100 : 70;
+                    added++;
                   }
                 });
-              });
+                
+                // If no content was added, rasterize the slide
+                if (added === 0) {
+                  await rasterizeSlideHTMLIntoFrame(e, slide.outerHTML || slide.innerHTML, frameId, x, y, W, H);
+                }
+                
+                made.push(frameId);
+              }
               
-              // Center view on first slide
-              e.zoomToFit();
+              // Select and focus on first slide
+              if (made.length) {
+                e.select(made[0]);
+                setCurrentFrameId(made[0]);
+                fitCameraToFrame(e, made[0]);
+              }
+              
               console.log('Import complete!');
             })
             .catch(err => {
@@ -241,16 +324,20 @@ function SlidesWithNotes() {
                 e.deleteShapes(currentShapes.map(s => s.id));
               }
               
+              const W = 1920;
+              const H = 1080;
+              const GAP = 140;
+              
               fallbackSlides.forEach((slide, index) => {
                 const frameId: TLShapeId = createShapeId(`frame_${index}`);
                 e.createShape({
                   id: frameId,
                   type: 'frame',
-                  x: index * 1200,
-                  y: 0,
+                  x: 0,
+                  y: index * (H + GAP),
                   props: {
-                    w: 1100,
-                    h: 700,
+                    w: W,
+                    h: H,
                     name: `Slide ${index + 1}`,
                   },
                 });
@@ -259,8 +346,8 @@ function SlidesWithNotes() {
                 e.createShape({
                   id: createShapeId(`title_${index}`),
                   type: 'geo',
-                  x: (index * 1200) + 50,
-                  y: 50,
+                  x: 50,
+                  y: index * (H + GAP) + 50,
                   parentId: frameId,
                   props: {
                     geo: 'rectangle',
@@ -280,8 +367,8 @@ function SlidesWithNotes() {
                 e.createShape({
                   id: createShapeId(`content_${index}`),
                   type: 'geo',
-                  x: (index * 1200) + 50,
-                  y: 150,
+                  x: 50,
+                  y: index * (H + GAP) + 150,
                   parentId: frameId,
                   props: {
                     geo: 'rectangle',
@@ -333,6 +420,7 @@ function SlidesWithNotes() {
     <div className="grid grid-rows-[1fr_auto] h-screen">
       <div className="relative">
         <Tldraw onMount={handleMount} />
+        {editor && <SlidesNav editor={editor} currentFrameId={currentFrameId as TLShapeId | null} />}
         {showImportButton && window.location.pathname.includes('vendor-advance') && (
           <button
             onClick={() => {
@@ -357,6 +445,43 @@ function SlidesWithNotes() {
       <div className="border-t bg-white">
         <NotesPanel frameId={currentFrameId} />
       </div>
+    </div>
+  );
+}
+
+// Navigation component for slides
+function SlidesNav({ editor, currentFrameId }: { editor: TLEditor; currentFrameId: TLShapeId | null }) {
+  const frames = useMemo(
+    () =>
+      editor
+        .getCurrentPageShapes()
+        .filter((s) => s.type === "frame")
+        .sort((a, b) => ((a.y as number) - (b.y as number)) || ((a.x as number) - (b.x as number))),
+    [editor, currentFrameId]
+  );
+
+  const idx = Math.max(0, frames.findIndex((f) => f.id === currentFrameId));
+  const go = (delta: number) => {
+    const n = frames[idx + delta];
+    if (!n) return;
+    editor.select(n.id);
+    fitCameraToFrame(editor, n.id as TLShapeId);
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") go(1);
+      if (e.key === "ArrowLeft") go(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [idx, frames.length, go]);
+
+  return (
+    <div className="fixed bottom-[190px] left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl bg-white/90 px-4 py-2 shadow">
+      <button onClick={() => go(-1)} className="px-3 py-1 rounded border">Prev</button>
+      <div className="text-sm">{frames.length ? idx + 1 : 0} / {frames.length}</div>
+      <button onClick={() => go(1)} className="px-3 py-1 rounded border">Next</button>
     </div>
   );
 }
