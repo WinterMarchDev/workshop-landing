@@ -170,7 +170,7 @@ function SlidesWithNotes() {
               slides.forEach((slide, index) => {
                 // Create a frame for each slide
                 const frameId: TLShapeId = createShapeId(`frame_${index}_${Date.now()}`);
-                e.createShapes([{
+                e.createShape({
                   id: frameId,
                   type: 'frame',
                   x: index * 1200,
@@ -180,7 +180,7 @@ function SlidesWithNotes() {
                     h: 700,
                     name: `Slide ${index + 1}`,
                   },
-                }]);
+                });
                 
                 // Extract and add text content from the slide
                 const textElements = slide.querySelectorAll('h1, h2, h3, p, li');
@@ -189,7 +189,7 @@ function SlidesWithNotes() {
                 textElements.forEach((elem, elemIndex) => {
                   const text = elem.textContent?.trim();
                   if (text) {
-                    e.createShapes([{
+                    e.createShape({
                       id: createShapeId(`text_${index}_${elemIndex}_${Date.now()}`),
                       type: 'text',
                       x: (index * 1200) + 50,
@@ -197,12 +197,15 @@ function SlidesWithNotes() {
                       parentId: frameId,
                       props: {
                         text,
+                        font: 'sans',
                         size: elem.tagName === 'H1' ? 'xl' : 
                               elem.tagName === 'H2' ? 'l' : 
                               elem.tagName === 'H3' ? 'm' : 's',
+                        align: 'start',
                         w: 1000,
+                        autoSize: true,
                       },
-                    }]);
+                    });
                     yOffset += elem.tagName.startsWith('H') ? 80 : 40;
                   }
                 });
@@ -234,7 +237,7 @@ function SlidesWithNotes() {
               
               fallbackSlides.forEach((slide, index) => {
                 const frameId: TLShapeId = createShapeId(`frame_${index}`);
-                e.createShapes([{
+                e.createShape({
                   id: frameId,
                   type: 'frame',
                   x: index * 1200,
@@ -244,10 +247,10 @@ function SlidesWithNotes() {
                     h: 700,
                     name: `Slide ${index + 1}`,
                   },
-                }]);
+                });
                 
                 // Add title
-                e.createShapes([{
+                e.createShape({
                   id: createShapeId(`title_${index}`),
                   type: 'text',
                   x: (index * 1200) + 50,
@@ -255,13 +258,16 @@ function SlidesWithNotes() {
                   parentId: frameId,
                   props: {
                     text: slide.title,
+                    font: 'sans',
                     size: 'xl',
+                    align: 'start',
                     w: 1000,
+                    autoSize: true,
                   },
-                }]);
+                });
                 
                 // Add content
-                e.createShapes([{
+                e.createShape({
                   id: createShapeId(`content_${index}`),
                   type: 'text',
                   x: (index * 1200) + 50,
@@ -269,10 +275,13 @@ function SlidesWithNotes() {
                   parentId: frameId,
                   props: {
                     text: slide.content,
+                    font: 'sans',
                     size: 'm',
+                    align: 'start',
                     w: 1000,
+                    autoSize: true,
                   },
-                }]);
+                });
               });
               
               e.zoomToFit();
