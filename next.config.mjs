@@ -1,7 +1,12 @@
+// next.config.mjs
+import { createRequire } from 'node:module';
+
+const req = createRequire(import.meta.url);
+const mjs = (pkg) => req.resolve(`${pkg}/dist/index.mjs`);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: { esmExternals: 'loose' },
   async redirects() {
     return [
       {
@@ -14,14 +19,14 @@ const nextConfig = {
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      'tldraw': require.resolve('tldraw/dist/index.mjs'),
-      '@tldraw/editor': require.resolve('@tldraw/editor/dist/index.mjs'),
-      '@tldraw/utils': require.resolve('@tldraw/utils/dist/index.mjs'),
-      '@tldraw/state': require.resolve('@tldraw/state/dist/index.mjs'),
-      '@tldraw/state-react': require.resolve('@tldraw/state-react/dist/index.mjs'),
-      '@tldraw/store': require.resolve('@tldraw/store/dist/index.mjs'),
-      '@tldraw/validate': require.resolve('@tldraw/validate/dist/index.mjs'),
-      '@tldraw/tlschema': require.resolve('@tldraw/tlschema/dist/index.mjs'),
+      'tldraw': mjs('tldraw'),
+      '@tldraw/editor': mjs('@tldraw/editor'),
+      '@tldraw/utils': mjs('@tldraw/utils'),
+      '@tldraw/state': mjs('@tldraw/state'),
+      '@tldraw/state-react': mjs('@tldraw/state-react'),
+      '@tldraw/store': mjs('@tldraw/store'),
+      '@tldraw/validate': mjs('@tldraw/validate'),
+      '@tldraw/tlschema': mjs('@tldraw/tlschema'),
     };
     return config;
   },

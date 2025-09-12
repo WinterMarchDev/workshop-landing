@@ -8,16 +8,6 @@
     "start": "next start",
     "lint": "next lint"
   },
-  "overrides": {
-    "tldraw": "3.15.4",
-    "@tldraw/editor": "3.15.4",
-    "@tldraw/utils": "3.15.4",
-    "@tldraw/state": "3.15.4",
-    "@tldraw/state-react": "3.15.4",
-    "@tldraw/store": "3.15.4",
-    "@tldraw/validate": "3.15.4",
-    "@tldraw/tlschema": "3.15.4"
-  },
   "dependencies": {
     "@liveblocks/client": "^3.7.0",
     "@liveblocks/node": "^3.7.0",
