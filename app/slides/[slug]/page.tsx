@@ -234,6 +234,7 @@ function SlidesWithNotes() {
       unobserve = () => yMap.unobserveDeep(applyFromY);
 
       const push = () => {
+        if (syncing) return;                          // don't send during import
         cancelAnimationFrame(raf);
         raf = requestAnimationFrame(() => {
           const { document } = getSnapshot(editor.store);
@@ -241,12 +242,13 @@ function SlidesWithNotes() {
         });
       };
 
-      unsub = editor.store.listen(push, { source: "user" });
-
-      // expose a way for migration to flip syncing off when done
-      (window as any).__wm_end_migration__ = () => { 
-        syncing = false; 
-        push(); 
+      // subscribe only AFTER migration finishes
+      (window as any).__wm_end_migration__ = () => {
+        syncing = false;
+        if (!unsub) {
+          unsub = editor.store.listen(push, { source: "user" });
+        }
+        push();                                       // one initial commit
       };
     })();
 
