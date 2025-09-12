@@ -27,6 +27,7 @@ export function Room({
         if (!res.ok) throw new Error('Liveblocks auth failed');
         return res.json(); // token payload
       }}
+      largeMessageStrategy="split"
       // Handle large messages by logging warnings instead of throwing
       throttle={16}
     >
