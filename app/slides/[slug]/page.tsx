@@ -33,6 +33,7 @@ function SlidesWithNotes() {
   const room = useRoom();
   const [editor, setEditor] = useState<TLEditor | null>(null);
   const [currentFrameId, setCurrentFrameId] = useState<string | null>(null);
+  const [showImportButton, setShowImportButton] = useState(false);
 
   // Track selection for notes
   useEffect(() => {
@@ -96,11 +97,7 @@ function SlidesWithNotes() {
     };
   }, [editor, room]);
 
-  const runMigrationOnce = useCallback((e: TLEditor) => {
-    const slug = window.location.pathname.split('/').pop();
-    if (slug === 'vendor-advance') {
-      // Add a small delay to ensure the editor is fully initialized
-      setTimeout(() => {
+  const importSlides = useCallback((e: TLEditor) => {
         // Check if deck is empty or only has minimal content
         const shapes = e.getCurrentPageShapes();
         const hasFrames = shapes.some(s => s.type === 'frame');
@@ -115,12 +112,33 @@ function SlidesWithNotes() {
               return r.text();
             })
             .then(html => {
+              console.log('HTML fetched, length:', html.length);
+              console.log('HTML sample:', html.substring(0, 500));
+              
               // Parse HTML and create tldraw shapes
               const parser = new DOMParser();
               const doc = parser.parseFromString(html, 'text/html');
-              const slides = doc.querySelectorAll('.slide');
               
-              console.log(`Found ${slides.length} slides to import`);
+              // Try different selectors
+              let slides = doc.querySelectorAll('div.slide');
+              console.log(`Found ${slides.length} slides with div.slide selector`);
+              
+              if (slides.length === 0) {
+                slides = doc.querySelectorAll('.slide');
+                console.log(`Found ${slides.length} slides with .slide selector`);
+              }
+              
+              if (slides.length === 0) {
+                // Try to find any divs with slide in class
+                const allDivs = doc.querySelectorAll('div');
+                const slideDivs = Array.from(allDivs).filter(div => 
+                  div.className && div.className.includes('slide')
+                );
+                console.log(`Found ${slideDivs.length} divs with 'slide' in className`);
+                slides = slideDivs;
+              }
+              
+              console.log(`Processing ${slides.length} slides to import`);
               
               // Clear existing shapes if needed
               if (shapes.length > 0) {
@@ -178,9 +196,25 @@ function SlidesWithNotes() {
         } else {
           console.log('Deck already has content, skipping import');
         }
+  }, []);
+
+  const runMigrationOnce = useCallback((e: TLEditor) => {
+    const slug = window.location.pathname.split('/').pop();
+    if (slug === 'vendor-advance') {
+      // Add a small delay to ensure the editor is fully initialized
+      setTimeout(() => {
+        const shapes = e.getCurrentPageShapes();
+        const hasFrames = shapes.some(s => s.type === 'frame');
+        
+        if (!hasFrames || shapes.length < 5) {
+          importSlides(e);
+        } else {
+          // Show manual import button if deck has content
+          setShowImportButton(true);
+        }
       }, 100);
     }
-  }, []);
+  }, [importSlides]);
 
   const handleMount = useCallback((e: TLEditor) => {
     setEditor(e);
@@ -189,7 +223,29 @@ function SlidesWithNotes() {
 
   return (
     <div className="grid grid-rows-[1fr_auto] h-screen">
-      <Tldraw onMount={handleMount} />
+      <div className="relative">
+        <Tldraw onMount={handleMount} />
+        {showImportButton && window.location.pathname.includes('vendor-advance') && (
+          <button
+            onClick={() => {
+              if (editor) {
+                if (confirm('This will replace all existing content. Continue?')) {
+                  // Clear all shapes first
+                  const shapes = editor.getCurrentPageShapes();
+                  if (shapes.length > 0) {
+                    editor.deleteShapes(shapes.map(s => s.id));
+                  }
+                  importSlides(editor);
+                  setShowImportButton(false);
+                }
+              }
+            }}
+            className="absolute top-4 right-4 z-50 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Import Vendor Advance Slides
+          </button>
+        )}
+      </div>
       <div className="border-t bg-white">
         <NotesPanel frameId={currentFrameId} />
       </div>
