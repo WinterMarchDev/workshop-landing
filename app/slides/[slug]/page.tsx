@@ -99,66 +99,86 @@ function SlidesWithNotes() {
   const runMigrationOnce = useCallback((e: TLEditor) => {
     const slug = window.location.pathname.split('/').pop();
     if (slug === 'vendor-advance') {
-      // Check if deck is empty (only has default content)
-      const shapes = e.getCurrentPageShapes();
-      if (shapes.length === 0) {
-        // Fetch and parse the static HTML to seed the deck
-        fetch('/vendor-advance-slides.html')
-          .then(r => r.text())
-          .then(html => {
-            // Parse HTML and create tldraw shapes
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const slides = doc.querySelectorAll('.slide');
-            
-            slides.forEach((slide, index) => {
-              // Create a frame for each slide
-              const frameId: TLShapeId = createShapeId(`frame_${index}_${Date.now()}`);
-              e.createShapes([{
-                id: frameId,
-                type: 'frame',
-                x: index * 1200,
-                y: 0,
-                props: {
-                  w: 1100,
-                  h: 700,
-                  name: `Slide ${index + 1}`,
-                },
-              }]);
+      // Add a small delay to ensure the editor is fully initialized
+      setTimeout(() => {
+        // Check if deck is empty or only has minimal content
+        const shapes = e.getCurrentPageShapes();
+        const hasFrames = shapes.some(s => s.type === 'frame');
+        
+        if (!hasFrames || shapes.length < 5) {
+          console.log('Importing vendor-advance slides...', { shapes: shapes.length, hasFrames });
+          
+          // Fetch and parse the static HTML to seed the deck
+          fetch('/vendor-advance-slides.html')
+            .then(r => {
+              if (!r.ok) throw new Error(`HTTP ${r.status}`);
+              return r.text();
+            })
+            .then(html => {
+              // Parse HTML and create tldraw shapes
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+              const slides = doc.querySelectorAll('.slide');
               
-              // Extract and add text content from the slide
-              const textElements = slide.querySelectorAll('h1, h2, h3, p, li');
-              let yOffset = 50;
+              console.log(`Found ${slides.length} slides to import`);
               
-              textElements.forEach((elem, elemIndex) => {
-                const text = elem.textContent?.trim();
-                if (text) {
-                  e.createShapes([{
-                    id: createShapeId(`text_${index}_${elemIndex}_${Date.now()}`),
-                    type: 'text',
-                    x: (index * 1200) + 50,
-                    y: yOffset,
-                    parentId: frameId,
-                    props: {
-                      text,
-                      size: elem.tagName === 'H1' ? 'xl' : 
-                            elem.tagName === 'H2' ? 'l' : 
-                            elem.tagName === 'H3' ? 'm' : 's',
-                      w: 1000,
-                    },
-                  }]);
-                  yOffset += elem.tagName.startsWith('H') ? 80 : 40;
-                }
+              // Clear existing shapes if needed
+              if (shapes.length > 0) {
+                e.deleteShapes(shapes.map(s => s.id));
+              }
+              
+              slides.forEach((slide, index) => {
+                // Create a frame for each slide
+                const frameId: TLShapeId = createShapeId(`frame_${index}_${Date.now()}`);
+                e.createShapes([{
+                  id: frameId,
+                  type: 'frame',
+                  x: index * 1200,
+                  y: 0,
+                  props: {
+                    w: 1100,
+                    h: 700,
+                    name: `Slide ${index + 1}`,
+                  },
+                }]);
+                
+                // Extract and add text content from the slide
+                const textElements = slide.querySelectorAll('h1, h2, h3, p, li');
+                let yOffset = 50;
+                
+                textElements.forEach((elem, elemIndex) => {
+                  const text = elem.textContent?.trim();
+                  if (text) {
+                    e.createShapes([{
+                      id: createShapeId(`text_${index}_${elemIndex}_${Date.now()}`),
+                      type: 'text',
+                      x: (index * 1200) + 50,
+                      y: yOffset,
+                      parentId: frameId,
+                      props: {
+                        text,
+                        size: elem.tagName === 'H1' ? 'xl' : 
+                              elem.tagName === 'H2' ? 'l' : 
+                              elem.tagName === 'H3' ? 'm' : 's',
+                        w: 1000,
+                      },
+                    }]);
+                    yOffset += elem.tagName.startsWith('H') ? 80 : 40;
+                  }
+                });
               });
+              
+              // Center view on first slide
+              e.zoomToFit();
+              console.log('Import complete!');
+            })
+            .catch(err => {
+              console.error('Failed to seed deck from HTML:', err);
             });
-            
-            // Center view on first slide
-            e.zoomToFit();
-          })
-          .catch(err => {
-            console.error('Failed to seed deck from HTML:', err);
-          });
-      }
+        } else {
+          console.log('Deck already has content, skipping import');
+        }
+      }, 100);
     }
   }, []);
 
