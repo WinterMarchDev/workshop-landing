@@ -6,6 +6,10 @@ export async function POST(req: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   if (!supabaseUrl || !supabaseKey) {
+    console.error("Missing Supabase environment variables:", {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseKey
+    });
     return NextResponse.json({ error: "Supabase env missing" }, { status: 500 });
   }
   const sb = createClient(supabaseUrl, supabaseKey);
@@ -19,7 +23,10 @@ export async function POST(req: NextRequest) {
     contentType,
     upsert: true,
   });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Supabase storage upload failed:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   const { data } = sb.storage.from("slides").getPublicUrl(filename);
   return NextResponse.json({ url: data.publicUrl });

@@ -131,7 +131,14 @@ async function putRasterBackground(
           .toString(36).slice(2)}.png`,
       }),
     });
+    
+    if (!r.ok) {
+      const msg = await r.text().catch(() => String(r.status));
+      throw new Error(`Upload failed: ${r.status} ${msg}`);
+    }
+    
     const { url } = await r.json();
+    if (!url) throw new Error("Upload returned no URL");
 
     editor.createShapes([{
       id: createShapeId(`bg_${crypto.randomUUID()}`),
