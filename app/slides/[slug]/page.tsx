@@ -201,26 +201,31 @@ function SlidesWithNotes() {
     const ydoc = yProvider.getYDoc();
     const yMap = ydoc.getMap<any>("tldraw");
 
-    // Lazy import to avoid ESM issues
-    const { getSnapshot, loadSnapshot } = require("tldraw");
+    let unsub: (() => void) | null = null;
+    let unobserve: (() => void) | null = null;
 
-    const applyFromY = () => {
-      const snap = yMap.get("document");
-      if (snap) loadSnapshot(editor.store, snap);
-    };
-    yMap.observeDeep(applyFromY);
+    (async () => {
+      const { getSnapshot, loadSnapshot } = await import("tldraw");
 
-    const unsub = editor.store.listen(
-      () => {
-        const { document } = getSnapshot(editor.store);
-        yMap.set("document", document);
-      },
-      { source: "user" }
-    );
+      const applyFromY = () => {
+        const snap = yMap.get("document");
+        if (snap) loadSnapshot(editor.store, snap);
+      };
+      yMap.observeDeep(applyFromY);
+      unobserve = () => yMap.unobserveDeep(applyFromY);
+
+      unsub = editor.store.listen(
+        () => {
+          const { document } = getSnapshot(editor.store);
+          yMap.set("document", document);
+        },
+        { source: "user" }
+      );
+    })();
 
     return () => {
-      unsub();
-      yMap.unobserveDeep(applyFromY);
+      if (unsub) unsub();
+      if (unobserve) unobserve();
     };
   }, [editor, room]);
 
