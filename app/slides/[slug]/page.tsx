@@ -131,12 +131,12 @@ function SlidesWithNotes() {
               console.log('Body innerHTML sample:', doc.body?.innerHTML?.substring(0, 500));
               
               // Look for slides with multiple approaches
-              let slides = doc.querySelectorAll('div.slide');
+              let slides: Element[] = Array.from(doc.querySelectorAll('div.slide'));
               console.log(`Method 1 - div.slide: found ${slides.length}`);
               
               if (slides.length === 0) {
                 // Try without the div qualifier
-                slides = doc.querySelectorAll('.slide');
+                slides = Array.from(doc.querySelectorAll('.slide'));
                 console.log(`Method 2 - .slide: found ${slides.length}`);
               }
               
@@ -144,7 +144,7 @@ function SlidesWithNotes() {
                 // Look in the presentation container
                 const container = doc.querySelector('.presentation-container');
                 if (container) {
-                  slides = container.querySelectorAll('.slide');
+                  slides = Array.from(container.querySelectorAll('.slide'));
                   console.log(`Method 3 - .presentation-container .slide: found ${slides.length}`);
                 }
               }
