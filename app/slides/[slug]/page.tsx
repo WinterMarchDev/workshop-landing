@@ -55,12 +55,10 @@ async function beautifyWithAI(editor: TLEditor, frameId: TLShapeId) {
   if (!res.ok) throw new Error("AI layout failed");
   const layout = await res.json();
 
-  // remove everything except a background image if you're keeping it
+  // remove everything - give AI complete freedom to redesign
   const children = editor.getSortedChildIdsForParent(frameId);
-  for (const id of children) {
-    const s = editor.getShape(id);
-    if (s?.type === "image" && s?.props?.w === 1920 && s?.props?.h === 1080) continue; // keep full-bleed bg
-    editor.deleteShapes([id]);
+  if (children.length > 0) {
+    editor.deleteShapes(children);
   }
 
   const pad = 24;
