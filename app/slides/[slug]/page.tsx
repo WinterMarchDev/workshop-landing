@@ -189,21 +189,25 @@ function SlidesWithNotes() {
                 textElements.forEach((elem, elemIndex) => {
                   const text = elem.textContent?.trim();
                   if (text) {
+                    // Create text shape with tldraw's expected format
+                    const textShapeId = createShapeId(`text_${index}_${elemIndex}_${Date.now()}`);
                     e.createShape({
-                      id: createShapeId(`text_${index}_${elemIndex}_${Date.now()}`),
+                      id: textShapeId,
                       type: 'text',
                       x: (index * 1200) + 50,
                       y: yOffset,
                       parentId: frameId,
                       props: {
-                        text,
+                        // text content in tldraw goes in 'text' property as a string
+                        text: text || '',
                         font: 'sans',
                         size: elem.tagName === 'H1' ? 'xl' : 
                               elem.tagName === 'H2' ? 'l' : 
                               elem.tagName === 'H3' ? 'm' : 's',
                         align: 'start',
+                        color: 'black',
                         w: 1000,
-                        autoSize: true,
+                        autoSize: false,
                       },
                     });
                     yOffset += elem.tagName.startsWith('H') ? 80 : 40;
@@ -257,12 +261,13 @@ function SlidesWithNotes() {
                   y: 50,
                   parentId: frameId,
                   props: {
-                    text: slide.title,
+                    text: slide.title || '',
                     font: 'sans',
                     size: 'xl',
                     align: 'start',
+                    color: 'black',
                     w: 1000,
-                    autoSize: true,
+                    autoSize: false,
                   },
                 });
                 
@@ -274,12 +279,13 @@ function SlidesWithNotes() {
                   y: 150,
                   parentId: frameId,
                   props: {
-                    text: slide.content,
+                    text: slide.content || '',
                     font: 'sans',
                     size: 'm',
                     align: 'start',
+                    color: 'black',
                     w: 1000,
-                    autoSize: true,
+                    autoSize: false,
                   },
                 });
               });
