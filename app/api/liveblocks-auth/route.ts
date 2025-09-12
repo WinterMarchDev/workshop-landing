@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const cookie = req.cookies.get("wm_sess")?.value ?? null;
+  const cookie = req.cookies.get("wm_sess")?.value;
   const user = await verifyWmSession(cookie);
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
