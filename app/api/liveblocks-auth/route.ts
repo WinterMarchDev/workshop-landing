@@ -1,33 +1,44 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { Liveblocks } from "@liveblocks/node";
-
-// Reuse your real session verification. Example assumes you have a shared util:
 import { verifyWmSession } from "@/lib/auth";
 
-const liveblocks = new Liveblocks({
-  secret: process.env.LIVEBLOCKS_SECRET_KEY!,
-});
-
-// Clients POST { room: "wm:docs:vendor-advance" } to this route.
-// We verify your cookie, then grant access to that room specifically.
 export async function POST(req: NextRequest) {
-  // Strict gate: must be signed in via your existing cookie
-  const cookie = req.cookies.get("wm_sess")?.value;
+  const secret = process.env.LIVEBLOCKS_SECRET_KEY;
+  if (!secret) {
+    return NextResponse.json(
+      { error: "Server misconfigured: LIVEBLOCKS_SECRET_KEY missing." },
+      { status: 500 }
+    );
+  }
+
+  const cookie = req.cookies.get("wm_sess")?.value ?? null;
   const user = await verifyWmSession(cookie);
-  if (!user) return new Response("unauthorized", { status: 401 });
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
 
-  const { room } = await req.json();
+  let roomId: string | undefined;
+  try {
+    const body = await req.json();
+    roomId = body?.room;
+  } catch {
+    // no body provided
+  }
 
-  // Build a Liveblocks session for this user and allow exactly this room
+  const liveblocks = new Liveblocks({ secret });
   const session = liveblocks.prepareSession(user.id, {
     userInfo: { name: user.name ?? "WM User", avatar: user.avatar },
   });
 
-  // If you want to allow all docs, use a pattern like "wm:docs:*"
-  // session.allow("wm:docs:*", session.FULL_ACCESS);
-  // For strictness, only allow the requested room:
-  session.allow(room, session.FULL_ACCESS);
+  if (roomId) {
+    session.allow(roomId, session.FULL_ACCESS);
+  } else {
+    session.allow("wm:*", session.FULL_ACCESS);      // allow both docs and slides namespaces
+  }
 
   const { body, status } = await session.authorize();
-  return new Response(body, { status });
+  return new NextResponse(body, {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }

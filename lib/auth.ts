@@ -47,17 +47,17 @@ export async function verifyWmSession(token: string | undefined) {
   if (!ok) return null;
 
   // Fetch user info from database
-  const { data: users } = await sbAdmin
-    .from("auth_users")
-    .select("id, username, display_name, avatar_url")
+  const { data: user } = await sbAdmin
+    .from("passwords")
+    .select("id, username, User")
     .eq("id", id)
     .single();
 
-  if (!users) return null;
+  if (!user) return null;
 
   return {
-    id: users.id,
-    name: users.display_name || users.username,
-    avatar: users.avatar_url,
+    id: String(user.id),
+    name: user.User || user.username,
+    avatar: undefined,
   };
 }
