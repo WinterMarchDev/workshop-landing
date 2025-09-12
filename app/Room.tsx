@@ -25,10 +25,6 @@ export function Room({
         id={roomId}
         initialPresence={{ cursor: null }}
         initialStorage={() => ({})}
-        // Increase the max message size for large slide data
-        unstable_options={{
-          largeMessageThreshold: 1024 * 1024, // 1MB threshold
-        }}
       >
         <ClientSideSuspense fallback={<div>Loading…</div>}>
           {children}
