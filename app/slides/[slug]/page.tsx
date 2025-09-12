@@ -174,7 +174,7 @@ function SlidesWithNotes() {
               if (!r.ok) throw new Error(`HTTP ${r.status}`);
               return r.text();
             })
-            .then(html => {
+            .then(async html => {
               console.log('HTML fetched successfully, length:', html.length);
               
               // If HTML is too short, something's wrong
