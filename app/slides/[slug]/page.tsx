@@ -20,6 +20,75 @@ import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
 
+// Collect text from current slide frame
+function collectSlideText(editor: TLEditor, frameId: TLShapeId) {
+  const kids = editor.getSortedChildIdsForParent(frameId);
+  const lines: string[] = [];
+  for (const id of kids) {
+    const s = editor.getShape(id);
+    if (!s) continue;
+    // text shapes and geo with richText
+    // @ts-expect-error access props compat
+    const rt = s.props?.richText;
+    if (rt?.spans) {
+      const t = rt.spans.map((sp: any) => sp.text ?? "").join("");
+      if (t.trim()) lines.push(t.trim());
+    }
+  }
+  return lines.join("\n");
+}
+
+// Beautify slide with AI
+async function beautifyWithAI(editor: TLEditor, frameId: TLShapeId) {
+  const source = collectSlideText(editor, frameId);
+  const res = await fetch("/api/ai/slide", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: source,
+      theme: {
+        palette: { bgLight: "#EDF1F4", text: "#0B1F2E", accent: "#6B849D" },
+        fontScale: { title: 56, subtitle: 36, body: 28, callout: 30 }
+      }
+    })
+  });
+  if (!res.ok) throw new Error("AI layout failed");
+  const layout = await res.json();
+
+  // remove everything except a background image if you're keeping it
+  const children = editor.getSortedChildIdsForParent(frameId);
+  for (const id of children) {
+    const s = editor.getShape(id);
+    if (s?.type === "image" && s?.props?.w === 1920 && s?.props?.h === 1080) continue; // keep full-bleed bg
+    editor.deleteShapes([id]);
+  }
+
+  const pad = 24;
+  const addText = (x: number, y: number, w: number, h: number, text: string, size: "s"|"m"|"l"|"xl" = "m", align: "start"|"middle"|"end" = "start") => {
+    editor.createShapes([{
+      id: createShapeId(`txt_${Date.now()}`),
+      type: "text",
+      x, y, parentId: frameId,
+      props: {
+        w: Math.max(80, w - pad * 2),
+        autoSize: false,
+        size,
+        font: "sans",
+        color: "black",
+        textAlign: align,
+        richText: toRichText(text)
+      }
+    }]);
+  };
+
+  for (const el of layout.elements ?? []) {
+    if (el.type === "title") addText(el.x, el.y, el.w, el.h, el.text, "xl", "start");
+    if (el.type === "subtitle") addText(el.x, el.y, el.w, el.h, el.text, "l", "start");
+    if (el.type === "callout") addText(el.x, el.y, el.w, el.h, el.text, "m", "start");
+    if (el.type === "bullets") addText(el.x, el.y, el.w, el.h, "• " + el.items.join("\n• "), "m", "start");
+  }
+}
+
 // Camera helper to fit view to frame
 function fitCameraToFrame(editor: TLEditor, frameId: TLShapeId, inset = 96, leaveForNotes = 180) {
   const b = editor.getShapePageBounds(frameId);
@@ -421,6 +490,7 @@ function SlidesWithNotes() {
       <div className="relative">
         <Tldraw onMount={handleMount} />
         {editor && <SlidesNav editor={editor} currentFrameId={currentFrameId as TLShapeId | null} />}
+        {editor && <AIToolbar editor={editor} currentFrameId={currentFrameId as TLShapeId | null} />}
         {showImportButton && window.location.pathname.includes('vendor-advance') && (
           <button
             onClick={() => {
@@ -445,6 +515,36 @@ function SlidesWithNotes() {
       <div className="border-t bg-white">
         <NotesPanel frameId={currentFrameId} />
       </div>
+    </div>
+  );
+}
+
+// AI Toolbar component
+function AIToolbar({ editor, currentFrameId }: { editor: TLEditor; currentFrameId: TLShapeId | null }) {
+  const [loading, setLoading] = useState(false);
+  
+  if (!editor || !currentFrameId) return null;
+  
+  return (
+    <div className="fixed top-6 right-6 z-50 flex gap-2">
+      <button
+        onClick={async () => {
+          setLoading(true);
+          try {
+            await beautifyWithAI(editor, currentFrameId);
+          } catch (err) {
+            console.error('Beautify failed:', err);
+            alert('Failed to beautify slide. Please try again.');
+          } finally {
+            setLoading(false);
+          }
+        }}
+        disabled={loading}
+        className="rounded-lg border px-3 py-1 bg-white shadow hover:bg-gray-50 disabled:opacity-50"
+        title="AI: Beautify this slide"
+      >
+        {loading ? 'Processing...' : 'AI Beautify'}
+      </button>
     </div>
   );
 }
