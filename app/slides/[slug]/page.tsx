@@ -99,55 +99,49 @@ function fitCameraToFrame(editor: TLEditor, frameId: TLShapeId, inset = 96, leav
   editor.setCamera({ x: cx - vw / (2 * z), y: cy - vh / (2 * z), z });
 }
 
-// Rasterize fallback for empty slides
-async function rasterizeSlideHTMLIntoFrame(
+// Helper to create high-DPI background image for slide
+async function putRasterBackground(
   editor: TLEditor,
   html: string,
   frameId: TLShapeId,
   x: number,
   y: number,
   W = 1920,
-  H = 1080,
-  slideIndex?: number
+  H = 1080
 ) {
   const staging = document.createElement("div");
-  staging.style.position = "fixed";
-  staging.style.left = "-99999px";
-  staging.style.top = "-99999px";
-  staging.style.width = `${W}px`;
-  staging.style.height = `${H}px`;
-  staging.style.background = "white";
+  Object.assign(staging.style, {
+    position: "fixed", left: "-99999px", top: "-99999px",
+    width: `${W}px`, height: `${H}px`, background: "white"
+  });
   staging.innerHTML = html;
   document.body.appendChild(staging);
-
+  
   try {
     const dataUrl = await toPng(staging, { cacheBust: true, pixelRatio: 2 });
     document.body.removeChild(staging);
 
-    // Upload the image to Supabase Storage
-    const up = await fetch("/api/slides/upload", {
+    // upload to Supabase to avoid giant base64 in the doc
+    const r = await fetch("/api/slides/upload", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         dataUrl,
-        key: slideIndex !== undefined 
-          ? `vendor-advance/slide-${String(slideIndex + 1).padStart(2, "0")}.png`
-          : `vendor-advance/slide-${Date.now()}.png`,
+        key: `vendor-advance/slide-${Date.now()}-${Math.random()
+          .toString(36).slice(2)}.png`,
       }),
     });
-    const { url: publicUrl } = await up.json();
+    const { url } = await r.json();
 
-    editor.createShape({
-      id: createShapeId(`img_${Date.now()}`),
+    editor.createShapes([{
+      id: createShapeId(`bg_${crypto.randomUUID()}`),
       type: "image",
-      x,
-      y,
-      parentId: frameId,
-      props: { w: W, h: H, url: publicUrl },
-    });
+      x, y, parentId: frameId,
+      props: { w: W, h: H, url },
+    }]);
   } catch (err) {
     console.error('Failed to rasterize slide:', err);
-    document.body.removeChild(staging);
+    if (staging.parentNode) document.body.removeChild(staging);
   }
 }
 
@@ -190,7 +184,7 @@ function SlidesWithNotes() {
       
       if (frameId) {
         setCurrentFrameId(frameId);
-        fitCameraToFrame(editor, frameId);
+        // Don't fit camera on every change - only on explicit navigation
       }
     };
 
@@ -329,94 +323,56 @@ function SlidesWithNotes() {
                 e.deleteShapes(shapes.map(s => s.id));
               }
               
-              const W = 1920;
-              const H = 1080;
-              const GAP = 140;
+              const W = 1920, H = 1080, GAP = 140;
               const made: TLShapeId[] = [];
-              
+
               for (let i = 0; i < slides.length; i++) {
-                const slide = slides[i];
-                const x = 0;
-                const y = i * (H + GAP);
+                const x = 0, y = i * (H + GAP);
+                const frameId: TLShapeId = createShapeId(`frame_${crypto.randomUUID()}`);
+
+                e.createShapes([{
+                  id: frameId, type: "frame", x, y,
+                  props: { w: W, h: H, name: `Slide ${i + 1}` }
+                }]);
+
+                // Always put high-DPI background first
+                await putRasterBackground(e, slides[i].outerHTML || slides[i].innerHTML, frameId, x, y);
+
+                // overlay minimal editable text (optional)
+                const tmp = document.createElement("div");
+                tmp.innerHTML = slides[i].outerHTML || slides[i].innerHTML;
+                const blocks = Array.from(tmp.querySelectorAll("h1,h2,ul>li"));
+                let textY = y + 180;
                 
-                // Create a frame for each slide
-                const frameId: TLShapeId = createShapeId(`frame_${i}_${Date.now()}`);
-                e.createShape({
-                  id: frameId,
-                  type: 'frame',
-                  x,
-                  y,
-                  props: {
-                    w: W,
-                    h: H,
-                    name: `Slide ${i + 1}`,
-                  },
-                });
-                
-                // Always rasterize the slide as a background for visual fidelity
-                await rasterizeSlideHTMLIntoFrame(e, slide.outerHTML || slide.innerHTML, frameId, x, y, W, H, i);
-                
-                // Only overlay primary heading and first few bullet points for editing
-                const heading = slide.querySelector('h1, h2');
-                const bullets = slide.querySelectorAll('li');
-                let yOffset = 50;
-                
-                // Add heading if exists
-                if (heading) {
-                  const text = heading.textContent?.trim();
-                  if (text) {
-                    const textShapeId = createShapeId(`text_${i}_heading_${Date.now()}`);
-                    e.createShape({
-                      id: textShapeId,
-                      type: 'geo',
-                      x: x + 50,
-                      y: y + yOffset,
+                for (const el of blocks.slice(0, 4)) {  // limit to 4 text overlays
+                  const text = el.tagName === "LI"
+                    ? `• ${(el as HTMLElement).innerText}`
+                    : (el as HTMLElement).innerText;
+                  
+                  if (text && text.trim()) {
+                    e.createShapes([{
+                      id: createShapeId(`txt_${crypto.randomUUID()}`),
+                      type: "geo",
+                      x: x + 120,
+                      y: textY,
                       parentId: frameId,
                       props: {
                         geo: 'rectangle',
                         fill: 'none',
-                        color: 'black',
-                        size: 'xl',
-                        font: 'sans',
-                        align: 'start',
-                        verticalAlign: 'start',
-                        w: W - 100,
-                        h: 80,
+                        w: 1680,
+                        h: el.tagName === "H1" || el.tagName === "H2" ? 80 : 60,
+                        size: el.tagName === "H1" ? "xl" : el.tagName === "H2" ? "l" : "m",
+                        font: "sans",
+                        color: "black",
+                        align: "start",
+                        verticalAlign: "start",
                         richText: toRichText(text),
                       },
-                    });
-                    yOffset += 100;
+                    }]);
+                    textY += el.tagName === "H1" || el.tagName === "H2" ? 100 : 70;
                   }
                 }
-                
-                // Add first 3 bullet points if they exist
-                Array.from(bullets).slice(0, 3).forEach((bullet, idx) => {
-                  const text = bullet.textContent?.trim();
-                  if (text) {
-                    const bulletShapeId = createShapeId(`text_${i}_bullet_${idx}_${Date.now()}`);
-                    e.createShape({
-                      id: bulletShapeId,
-                      type: 'geo',
-                      x: x + 100,
-                      y: y + yOffset,
-                      parentId: frameId,
-                      props: {
-                        geo: 'rectangle',
-                        fill: 'none',
-                        color: 'black',
-                        size: 'm',
-                        font: 'sans',
-                        align: 'start',
-                        verticalAlign: 'start',
-                        w: W - 150,
-                        h: 60,
-                        richText: toRichText(`• ${text}`),
-                      },
-                    });
-                    yOffset += 70;
-                  }
-                });
-                
+
                 made.push(frameId);
               }
               
