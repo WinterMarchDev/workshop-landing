@@ -353,16 +353,19 @@ function SlidesWithNotes() {
                   },
                 });
                 
-                // Extract and add text content from the slide
-                const textElements = slide.querySelectorAll('h1, h2, h3, p, li');
-                let yOffset = 50;
-                let added = 0;
+                // Always rasterize the slide as a background for visual fidelity
+                await rasterizeSlideHTMLIntoFrame(e, slide.outerHTML || slide.innerHTML, frameId, x, y, W, H, i);
                 
-                textElements.forEach((elem, elemIndex) => {
-                  const text = elem.textContent?.trim();
+                // Only overlay primary heading and first few bullet points for editing
+                const heading = slide.querySelector('h1, h2');
+                const bullets = slide.querySelectorAll('li');
+                let yOffset = 50;
+                
+                // Add heading if exists
+                if (heading) {
+                  const text = heading.textContent?.trim();
                   if (text) {
-                    // Use geo shape with richText for text content
-                    const textShapeId = createShapeId(`text_${i}_${elemIndex}_${Date.now()}`);
+                    const textShapeId = createShapeId(`text_${i}_heading_${Date.now()}`);
                     e.createShape({
                       id: textShapeId,
                       type: 'geo',
@@ -373,26 +376,46 @@ function SlidesWithNotes() {
                         geo: 'rectangle',
                         fill: 'none',
                         color: 'black',
-                        size: elem.tagName === 'H1' ? 'xl' : 
-                              elem.tagName === 'H2' ? 'l' : 
-                              elem.tagName === 'H3' ? 'm' : 's',
+                        size: 'xl',
                         font: 'sans',
                         align: 'start',
                         verticalAlign: 'start',
                         w: W - 100,
-                        h: elem.tagName.startsWith('H') ? 80 : 60,
+                        h: 80,
                         richText: toRichText(text),
                       },
                     });
-                    yOffset += elem.tagName.startsWith('H') ? 100 : 70;
-                    added++;
+                    yOffset += 100;
+                  }
+                }
+                
+                // Add first 3 bullet points if they exist
+                Array.from(bullets).slice(0, 3).forEach((bullet, idx) => {
+                  const text = bullet.textContent?.trim();
+                  if (text) {
+                    const bulletShapeId = createShapeId(`text_${i}_bullet_${idx}_${Date.now()}`);
+                    e.createShape({
+                      id: bulletShapeId,
+                      type: 'geo',
+                      x: x + 100,
+                      y: y + yOffset,
+                      parentId: frameId,
+                      props: {
+                        geo: 'rectangle',
+                        fill: 'none',
+                        color: 'black',
+                        size: 'm',
+                        font: 'sans',
+                        align: 'start',
+                        verticalAlign: 'start',
+                        w: W - 150,
+                        h: 60,
+                        richText: toRichText(`• ${text}`),
+                      },
+                    });
+                    yOffset += 70;
                   }
                 });
-                
-                // If no content was added, rasterize the slide
-                if (added === 0) {
-                  await rasterizeSlideHTMLIntoFrame(e, slide.outerHTML || slide.innerHTML, frameId, x, y, W, H, i);
-                }
                 
                 made.push(frameId);
               }
