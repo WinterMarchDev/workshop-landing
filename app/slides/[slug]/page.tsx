@@ -106,8 +106,9 @@ function SlidesWithNotes() {
           console.log('Importing vendor-advance slides...', { shapes: shapes.length, hasFrames });
           
           // Fetch and parse the static HTML to seed the deck
-          console.log('Starting fetch of /vendor-advance-slides.html');
-          fetch('/vendor-advance-slides.html')
+          // Using .txt extension to avoid Next.js routing issues
+          console.log('Starting fetch of /vendor-advance-slides.txt');
+          fetch('/vendor-advance-slides.txt')
             .then(r => {
               console.log('Fetch response:', r.status, r.statusText);
               if (!r.ok) throw new Error(`HTTP ${r.status}`);

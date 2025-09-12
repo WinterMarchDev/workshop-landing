@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CheckSammy Vendor Partnership Proposal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .edit-mode-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #48bb78;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            z-index: 1000;
+            font-weight: bold;
+        }
+        
+        .presentation-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1000px;
+            width: 100%;
+            overflow: hidden;
+            margin-top: 50px;
+        }
+        
+        .slide {
+            display: none;
+            padding: 60px;
+            min-height: 600px;
+            position: relative;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .slide.active {
+            display: block;
+        }
+        
+        [contenteditable="true"] {
+            outline: none;
+            transition: background-color 0.3s ease;
+        }
+        
+        [contenteditable="true"]:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: -2px -4px;
+        }
+        
+        [contenteditable="true"]:focus {
+            background-color: rgba(102, 126, 234, 0.2);
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: -2px -4px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-number {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        h1 {
+            color: #2d3748;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+        
+        h2 {
+            color: #4a5568;
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        
+        h3 {
+            color: #4a5568;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        ul {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 15px 0;
+            color: #4a5568;
+            line-height: 1.6;
+            font-size: 1.1em;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .warning {
+            background: #fed7d7;
+            border-left: 4px solid #fc8181;
+            padding: 15px;
+            margin: 20px 0;
+            color: #742a2a;
+        }
+        
+        .process-step {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
+        .controls {
+            background: #f7fafc;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .slide-info {
+            color: #718096;
+            font-size: 1.1em;
+        }
+        
+        .key-point {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .benefit-box {
+            background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #667eea;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+        }
+        
+        td {
+            padding: 15px;
+            vertical-align: top;
+        }
+        
+        ol {
+            font-size: 1.05em;
+            background: #f7fafc;
+            padding: 30px;
+            border-radius: 10px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="edit-mode-banner">
+        ✏️ EDIT MODE: Click any text to edit. Right-click → Save Page to export.
+    </div>
+    
+    <div class="presentation-container">
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <div class="slide-number">1</div>
+            <h1 contenteditable="true">Unlocking Vendor Potential: Partnering for Invoiced Cash Advances</h1>
+            <div class="subtitle" contenteditable="true">Strategic Vendor Behavior Management Through Financial Innovation</div>
+            <ul>
+                <li contenteditable="true">Presented by <span class="key-point">Jeremy Jones</span> to CheckSammy Leadership</li>
+                <li contenteditable="true">Pre-Arranged Financing: <span class="key-point">$200MM from Bawag Group AG at 6%</span></li>
+                <li contenteditable="true">Operations Partner: <span class="key-point">Raven Capital</span></li>
+            </ul>
+            <div class="benefit-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h3 style="color: white;" contenteditable="true">Triple Value Proposition:</h3>
+                <ul style="color: white;">
+                    <li contenteditable="true" style="color: white;">💰 <strong>34% after-tax returns</strong> through partnership structure</li>
+                    <li contenteditable="true" style="color: white;">🎯 <strong>Performance-based incentive system</strong> - vendors earn better rates</li>
+                    <li contenteditable="true" style="color: white;">📊 <strong>Strategic intelligence</strong> - understand vendor health and capabilities</li>
+                </ul>
+            </div>
+            <div class="highlight" contenteditable="true">
+                Transform vendor relationships from cost centers into profit centers with strategic alignment
+            </div>
+        </div>
+        
+        <!-- Slide 2: The Challenge -->
+        <div class="slide">
+            <div class="slide-number">2</div>
+            <h2 contenteditable="true">Your Vendors Face Serious Cash Flow Challenges</h2>
+            <div class="subtitle" contenteditable="true">Current Payment Terms Are Straining Their Operations</div>
+            <div class="warning" style="background: #fc8181; color: white; font-size: 1.1em;">
+                <strong contenteditable="true">Industry Reality: 68% of waste service vendors report cash flow as their #1 business concern</strong>
+            </div>
+            <ul>
+                <li contenteditable="true"><strong>CheckSammy's Net 60-90 payment terms</strong> while their costs are immediate:
+                    <ul>
+                        <li contenteditable="true">Weekly payroll obligations they struggle to meet</li>
+                        <li contenteditable="true">Fuel costs due on delivery</li>
+                        <li contenteditable="true">Equipment financing payments monthly</li>
+                        <li contenteditable="true">Insurance premiums that can't wait</li>
+                    </ul>
+                </li>
+                <li contenteditable="true"><strong>Current vendor financing options are expensive:</strong>
+                    <ul>
+                        <li contenteditable="true">Business credit cards at 24-29% APR</li>
+                        <li contenteditable="true">Merchant cash advances at 40-60% effective rates</li>
+                        <li contenteditable="true">Personal guarantees on high-interest loans</li>
+                        <li contenteditable="true">Traditional factoring at 5-8% monthly rates</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="highlight" style="background: #fed7d7; color: #742a2a;" contenteditable="true">
+                <strong>The Opportunity:</strong> Vendors seeking affordable financing will embrace performance standards to access 3% rates - 50-60% cheaper than their alternatives
+            </div>
+        </div>
+
+        <!-- Slide 3: Solution Overview -->
+        <div class="slide">
+            <div class="slide-number">3</div>
+            <h2 contenteditable="true">Solution: Support Vendors While Driving Performance</h2>
+            <div class="subtitle" contenteditable="true">Turn Financial Support Into Strategic Partnership</div>
+            <div class="warning" style="background: #00a896; color: white; font-size: 1.1em;" contenteditable="true">
+                <strong>Value Proposition:</strong> We're 50-60% cheaper than alternative lenders - vendors will eagerly meet CheckSammy's performance standards
+            </div>
+            <ul>
+                <li contenteditable="true"><strong>Immediate relief for cash-strapped vendors:</strong>
+                    <ul>
+                        <li contenteditable="true">93% of invoice value in 24 hours</li>
+                        <li contenteditable="true">3% monthly rate (vs. 5-8% alternatives)</li>
+                        <li contenteditable="true">Pre-approved by CheckSammy = guaranteed funding</li>
+                    </ul>
+                </li>
+                <li contenteditable="true"><strong>Strategic advantages for CheckSammy:</strong>
+                    <ul>
+                        <li contenteditable="true">Set performance requirements tied to rate incentives</li>
+                        <li contenteditable="true">Monitor vendor financial health in real-time</li>
+                        <li contenteditable="true">34% after-tax returns through partnership structure</li>
+                        <li contenteditable="true">No operational changes to your AP process</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="benefit-box" style="background: #fed7d7;">
+                <p style="color: #742a2a; font-weight: bold;" contenteditable="true">
+                    Vendor Perspective: "CheckSammy offers rates 50-60% below market. We're happy to meet their performance standards for this incredible savings."
+                </p>
+            </div>
+            <div class="highlight" contenteditable="true">
+                Key Advantage: Vendors see CheckSammy as a strategic partner invested in their success
+            </div>
+        </div>
+
+        <!-- Slide 4: Benefit #1 -->
+        <div class="slide">
+            <div class="slide-number">4</div>
+            <h2 contenteditable="true">Benefit #1 - Stronger Vendor Relationships</h2>
+            <div class="subtitle" contenteditable="true">Build Loyalty and Reliability Among Vendors</div>
+            <ul>
+                <li contenteditable="true">Vendors with better cash flow are more responsive and committed</li>
+                <li contenteditable="true">Reduces vendor turnover and negotiation pressures for shorter terms</li>
+                <li contenteditable="true">Enhances CheckSammy's reputation as a vendor-friendly partner</li>
+                <li contenteditable="true" class="key-point">Result: More competitive bids and long-term partnerships</li>
+                <li contenteditable="true">No direct cost to CheckSammy – partnership profits offset program</li>
+            </ul>
+        </div>
+
+        <!-- Slide 5: Strategic Control -->
+        <div class="slide">
+            <div class="slide-number">5</div>
+            <h2 contenteditable="true">The Real Power: Aligned Incentives Drive Performance</h2>
+            <div class="subtitle" contenteditable="true">Transform Financial Support Into Strategic Alignment</div>
+            <div class="benefit-box" style="background: linear-gradient(135deg, #fc8181 0%, #fed7d7 100%); color: #2d3748;">
+                <h3 style="color: #2d3748;" contenteditable="true">Vendors Are Motivated to Meet Your Standards:</h3>
+                <ul style="color: #2d3748; font-weight: 600;">
+                    <li contenteditable="true">Better recycling rates? → They'll improve sorting for 0.5% reduction</li>
+                    <li contenteditable="true">Route optimization needed? → They'll share GPS data for lower rates</li>
+                    <li contenteditable="true">Sustainability metrics required? → They'll track and report KPIs</li>
+                    <li contenteditable="true">Technology adoption goals? → They'll implement your systems</li>
+                    <li contenteditable="true">Long-term partnerships? → They'll commit to extended contracts</li>
+                </ul>
+            </div>
+            <div class="warning" style="background: #742a2a; color: white; font-size: 1.1em;" contenteditable="true">
+                <strong>Market Reality:</strong> Vendors currently paying 60-96% annually (5-8% monthly) are eager to partner with CheckSammy at 36% annual rate
+            </div>
+            <div class="benefit-box">
+                <h3 contenteditable="true">Win-Win Partnership Structure:</h3>
+                <ul>
+                    <li contenteditable="true"><strong>CheckSammy benefits from performance improvements</strong> - 34% after-tax returns</li>
+                    <li contenteditable="true"><strong>Data insights</strong> - Understand vendor financial health and capabilities</li>
+                    <li contenteditable="true"><strong>Vendors save dramatically</strong> - 3% vs 5-8% market rates</li>
+                </ul>
+            </div>
+            <div style="margin-top: 30px; padding: 20px; background: #f7fafc; border-radius: 10px;">
+                <p style="text-align: center; font-size: 1.2em; color: #4a5568; font-weight: bold;" contenteditable="true">
+                    "You're not competing on rate - you're offering partnership value at 50-60% market discount"
+                </p>
+                <p style="text-align: center; font-size: 1em; color: #718096; margin-top: 10px;" contenteditable="true">
+                    When vendors save $20,000-40,000 per million financed, they embrace partnership requirements
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 6: Why Partner vs Build -->
+        <div class="slide">
+            <div class="slide-number">6</div>
+            <h2 contenteditable="true">Why Partner vs. Build In-House?</h2>
+            <div class="subtitle" contenteditable="true">We Bring Ready Infrastructure, Capital, and Tax-Efficient Structure</div>
+            <table>
+                <tr>
+                    <th style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">CheckSammy Build In-House</th>
+                    <th style="background: linear-gradient(135deg, #84fab0, #8fd3f4); color: #2d3748;">Partner with Jeremy Jones</th>
+                </tr>
+                <tr>
+                    <td style="background: #fed7d7;">
+                        <ul style="margin: 0;">
+                            <li contenteditable="true">12-18 months to build platform</li>
+                            <li contenteditable="true">Need to secure $200MM financing</li>
+                            <li contenteditable="true">Hire 20+ person team</li>
+                            <li contenteditable="true">Build compliance infrastructure</li>
+                            <li contenteditable="true">Double taxation on profits</li>
+                            <li contenteditable="true">Unknown operational risks</li>
+                        </ul>
+                    </td>
+                    <td style="background: #e6fffa;">
+                        <ul style="margin: 0;">
+                            <li contenteditable="true"><strong>Day 1 ready</strong></li>
+                            <li contenteditable="true"><strong>$200MM from Bawag at 6% secured</strong></li>
+                            <li contenteditable="true"><strong>Raven Capital operations ready</strong></li>
+                            <li contenteditable="true"><strong>Pass-through partnership taxation</strong></li>
+                            <li contenteditable="true"><strong>Compliance framework built</strong></li>
+                            <li contenteditable="true"><strong>Proven processing at scale</strong></li>
+                        </ul>
+                    </td>
+                </tr>
+            </table>
+            <div class="benefit-box">
+                <h3 contenteditable="true">Our Partnership Advantages:</h3>
+                <ul>
+                    <li contenteditable="true"><strong>Tax-Efficient Structure:</strong> Limited Partnership saves ~8-10% vs corporate structure</li>
+                    <li contenteditable="true"><strong>Bawag Group AG Partnership:</strong> $200MM senior facility at 6% ready</li>
+                    <li contenteditable="true"><strong>Raven Capital Infrastructure:</strong> Processing millions in invoices daily</li>
+                    <li contenteditable="true"><strong>Market Knowledge:</strong> We know which vendors need affordable financing</li>
+                </ul>
+            </div>
+            <div class="highlight" contenteditable="true">
+                <strong>Bottom Line:</strong> CheckSammy gets 34% after-tax ROI starting in Q1 vs. spending millions to maybe launch in 2026
+            </div>
+        </div>
+
+        <!-- Slide 7: Risk Transfer -->
+        <div class="slide">
+            <div class="slide-number">7</div>
+            <h2 contenteditable="true">Risk Transfer and Compliance</h2>
+            <div class="subtitle" contenteditable="true">Shift Credit Risk Away from CheckSammy</div>
+            <ul>
+                <li contenteditable="true">Full compliance with industry regulations (e.g., UCC filings for factoring)</li>
+                <li contenteditable="true">Protects CheckSammy from vendor insolvency issues</li>
+                <li contenteditable="true">Transparent process: We verify invoices before advancing funds</li>
+                <li contenteditable="true" class="key-point">Outcome: Peace of mind and reduced administrative burden</li>
+            </ul>
+        </div>
+
+        <!-- Slide 8: How It Works -->
+        <div class="slide">
+            <div class="slide-number">8</div>
+            <h2 contenteditable="true">How It Works - Simple and Secure</h2>
+            <div class="subtitle" contenteditable="true">Pre-Approved Invoice Process Eliminates Risk</div>
+            <div class="process-step" style="background: #e6fffa; border-left-color: #00a896;">
+                <strong contenteditable="true">PRE-APPROVAL: CheckSammy verifies and pre-approves invoice BEFORE advance</strong>
+            </div>
+            <div class="process-step" contenteditable="true">1. Vendor submits invoice to CheckSammy for pre-approval</div>
+            <div class="process-step" contenteditable="true">2. CheckSammy validates invoice meets all requirements and approves</div>
+            <div class="process-step" contenteditable="true">3. Vendor requests advance from us with CheckSammy pre-approval code</div>
+            <div class="process-step" contenteditable="true">4. Vendor receives cash in 24 hours (minus 3% fee)</div>
+            <div class="process-step" contenteditable="true">5. CheckSammy pays us on original terms (net 60) - guaranteed payment</div>
+            <div class="highlight" contenteditable="true">
+                <strong>Zero dispute risk:</strong> Pre-approval means CheckSammy has already committed to payment
+            </div>
+            <div class="benefit-box">
+                <p contenteditable="true">Secure platform with encryption, fraud detection, and CheckSammy integration</p>
+            </div>
+        </div>
+
+        <!-- Slide 9: Investment Opportunity -->
+        <div class="slide">
+            <div class="slide-number">9</div>
+            <h2 contenteditable="true">Exclusive Investment Opportunity for CheckSammy</h2>
+            <div class="subtitle" contenteditable="true">Turn CheckSammy's AP Into a Revenue Generator with Competitive Moat</div>
+            <div class="benefit-box">
+                <h3 contenteditable="true">The Proposition:</h3>
+                <p contenteditable="true">Invest 1/3 of CheckSammy's quarterly AP ($50M) into an Invoice Cash Advance Company</p>
+                <p contenteditable="true"><strong>Near-zero risk:</strong> CheckSammy is essentially lending against its own pre-approved payables</p>
+                <p contenteditable="true" style="color: #ff6b6b; font-weight: bold; margin-top: 10px;">🔒 EXCLUSIVE: No other waste management company can participate - one partner per industry</p>
+            </div>
+            <ul>
+                <li contenteditable="true"><strong>CheckSammy's Numbers:</strong>
+                    <ul>
+                        <li contenteditable="true">Monthly AP: $50M | Quarterly: $150M</li>
+                        <li contenteditable="true">Equity investment: $50M (1/3 of quarterly)</li>
+                        <li contenteditable="true">Leverage: 75% senior debt at 6% = $150M</li>
+                        <li contenteditable="true">Total deployable capital: $200M</li>
+                    </ul>
+                </li>
+                <li contenteditable="true"><strong>Risk Mitigation & Competitive Advantage:</strong>
+                    <ul>
+                        <li contenteditable="true">CheckSammy pre-approves all invoices before advances</li>
+                        <li contenteditable="true">CheckSammy controls the payment - impossible to default on itself</li>
+                        <li contenteditable="true">Industry exclusivity locks out all competitors</li>
+                        <li contenteditable="true">34% after-tax ROI that competitors cannot access</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Slide 10: Financial Returns -->
+        <div class="slide">
+            <div class="slide-number">10</div>
+            <h2 contenteditable="true">Partnership Structure & Returns</h2>
+            <div class="subtitle" contenteditable="true">Tax-Efficient Pass-Through Partnership Model</div>
+            <div class="benefit-box" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);">
+                <h3 style="color: #2d3748;" contenteditable="true">Partnership Structure Benefits:</h3>
+                <ul style="color: #2d3748;">
+                    <li contenteditable="true"><strong>Pass-Through Taxation:</strong> Profits flow directly to CheckSammy without double taxation</li>
+                    <li contenteditable="true"><strong>K-1 Partnership Income:</strong> More favorable tax treatment than ordinary corporate income</li>
+                    <li contenteditable="true"><strong>Depreciation Benefits:</strong> Share of partnership's technology platform depreciation</li>
+                    <li contenteditable="true"><strong>Operating Control:</strong> CheckSammy as Limited Partner with governance rights</li>
+                </ul>
+            </div>
+            <div class="benefit-box">
+                <h3 contenteditable="true">Annual Performance Projection:</h3>
+                <ul>
+                    <li contenteditable="true">Gross revenue (3% × $200M × 6 cycles): <span class="key-point">$36M</span></li>
+                    <li contenteditable="true">Less: Debt service ($150M @ 6%): <span style="color: red;">-$9M</span></li>
+                    <li contenteditable="true">Less: Operating expenses: <span style="color: red;">-$5M</span></li>
+                    <li contenteditable="true">Less: Minimal reserves (0.5%): <span style="color: red;">-$0.6M</span></li>
+                    <li contenteditable="true"><strong>Pre-Tax Partnership Income: <span class="key-point">$21.4M</span></strong></li>
+                    <li contenteditable="true"><strong>After-Tax ROI (with pass-through): <span class="key-point">~34% net</span></strong></li>
+                </ul>
+            </div>
+            <div class="highlight" contenteditable="true">
+                Partnership Agreement includes: Full capital return option Day 366, quarterly distributions thereafter
+            </div>
+        </div>
+
+        <!-- Slide 11: Gamification -->
+        <div class="slide">
+            <div class="slide-number">11</div>
+            <h2 contenteditable="true">Vendors Are Eager to Earn Better Rates Through Performance</h2>
+            <div class="subtitle" contenteditable="true">Create Mutual Success Through Aligned Incentives</div>
+            <div class="warning" style="background: #fc8181; color: white; font-size: 1.1em; margin-bottom: 20px;">
+                <strong contenteditable="true">Market Reality: Vendors paying 5-8% monthly will embrace CheckSammy's 3% rate and performance standards</strong>
+            </div>
+            <div class="benefit-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h3 style="color: white;" contenteditable="true">Performance Standards Vendors Will Meet:</h3>
+                <ul style="color: white; font-size: 1.05em;">
+                    <li contenteditable="true" style="color: white;">✓ Improve recycling rates for additional 0.5% discount</li>
+                    <li contenteditable="true" style="color: white;">✓ Complete sustainability certifications to save 0.75%</li>
+                    <li contenteditable="true" style="color: white;">✓ Adopt CheckSammy's technology platform for better rates</li>
+                    <li contenteditable="true" style="color: white;">✓ Meet agreed KPI requirements</li>
+                    <li contenteditable="true" style="color: white;">✓ Provide operational data transparency</li>
+                    <li contenteditable="true" style="color: white;">✓ Sign longer-term contracts for rate benefits</li>
+                </ul>
+            </div>
+            <div class="benefit-box">
+                <h3 contenteditable="true">CheckSammy's Gamification Dashboard Controls:</h3>
+                <ul>
+                    <li contenteditable="true"><strong>High performers:</strong> → Can earn rates as low as 2% (75% below market)</li>
+                    <li contenteditable="true"><strong>Environmental excellence:</strong> → Rate rewards for green initiatives</li>
+                    <li contenteditable="true"><strong>Geographic expansion:</strong> → 0.5% incentive for new territories</li>
+                    <li contenteditable="true"><strong>Sustainability metrics:</strong> → Link rates to ESG scores</li>
+                </ul>
+            </div>
+            <div class="highlight" style="background: #fed7d7; color: #742a2a;" contenteditable="true">
+                <strong>Bottom Line:</strong> When vendors save 50-60% on financing costs, they're motivated to exceed CheckSammy's performance standards
+            </div>
+        </div>
+
+        <!-- Slide 12: Success Metrics (Previously Slide 13) -->
+        <div class="slide">
+            <div class="slide-number">12</div>
+            <h2 contenteditable="true">Why This Works: Strong Market Demand</h2>
+            <div class="subtitle" contenteditable="true">The Numbers That Guarantee Success</div>
+            <div class="warning" style="background: #fc8181; color: white; font-size: 1.1em;">
+                <strong contenteditable="true">Industry Data: 73% of waste service vendors have sought emergency financing at 5-8% monthly rates</strong>
+            </div>
+            <div class="benefit-box">
+                <h3 contenteditable="true">Financial Returns (Partnership Structure):</h3>
+                <ul>
+                    <li contenteditable="true">Pre-tax partnership income: $21.4M</li>
+                    <li contenteditable="true">After-tax ROI with pass-through: ~34% net</li>
+                    <li contenteditable="true">Tax savings vs. corporate structure: ~$2.1M annually</li>
+                    <li contenteditable="true">Full capital return option after year 1</li>
+                </ul>
+            </div>
+            <div class="benefit-box" style="background: #90EE90;">
+                <h3 style="color: #2d3748;" contenteditable="true">Market Opportunity for CheckSammy:</h3>
+                <ul style="color: #2d3748;">
+                    <li contenteditable="true"><strong>68%</strong> of CheckSammy's vendors use expensive credit at 5-8% monthly</li>
+                    <li contenteditable="true"><strong>45%</strong> have owners using personal guarantees</li>
+                    <li contenteditable="true"><strong>82%</strong> would welcome performance-based financing at 50% discount</li>
+                    <li contenteditable="true"><strong>91%</strong> would switch lenders for 2-5% monthly savings</li>
+                </ul>
+            </div>
+            <div class="benefit-box" style="background: #ADD8E6;">
+                <h3 style="color: #2d3748;" contenteditable="true">Strategic Intelligence Benefits:</h3>
+                <ul style="color: #2d3748;">
+                    <li contenteditable="true"><strong>Partnership Opportunities:</strong> Identify strong vendors for deeper relationships</li>
+                    <li contenteditable="true"><strong>Performance Data:</strong> Track which incentives drive real improvements</li>
+                    <li contenteditable="true"><strong>Risk Management:</strong> Early warning on vendor financial health</li>
+                    <li contenteditable="true"><strong>Market Intelligence:</strong> Industry trends via financing patterns</li>
+                </ul>
+            </div>
+            <div class="highlight" contenteditable="true">
+                <strong>The Opportunity:</strong> Help vendors save 50-60% on financing while driving performance improvements and earning 34% returns
+            </div>
+        </div>
+
+        <!-- Slide 13: Next Steps (Previously Slide 14) -->
+        <div class="slide">
+            <div class="slide-number">13</div>
+            <h2 contenteditable="true">Next Steps: Limited Partnership Formation</h2>
+            <div class="subtitle" contenteditable="true">Launch While Market Demand Is Strong</div>
+            <div class="warning" style="background: #fc8181; color: white; font-size: 1.1em; margin-bottom: 20px;">
+                <strong contenteditable="true">Timing Advantage: Every month CheckSammy waits, vendors pay 5-8% to other lenders instead of 3% to CheckSammy</strong>
+            </div>
+            <ul>
+                <li contenteditable="true"><strong>Week 1:</strong> Execute Limited Partnership Agreement
+                    <ul>
+                        <li contenteditable="true">CheckSammy as Limited Partner with $50M investment</li>
+                        <li contenteditable="true">Pass-through tax structure documentation</li>
+                        <li contenteditable="true">Governance and control provisions</li>
+                    </ul>
+                </li>
+                <li contenteditable="true"><strong>Week 2:</strong> Deploy capital structure
+                    <ul>
+                        <li contenteditable="true">$50M CheckSammy equity contribution</li>
+                        <li contenteditable="true">$200M Bawag debt facility at 6% activation</li>
+                    </ul>
+                </li>
+                <li contenteditable="true"><strong>Week 3-4:</strong> Launch with motivated vendors
+                    <ul>
+                        <li contenteditable="true">Target vendors currently paying 5-8% monthly</li>
+                        <li contenteditable="true">50-60% cost savings will drive rapid adoption</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="benefit-box">
+                <h3 contenteditable="true">Contact Information:</h3>
+                <p style="text-align: center; font-size: 1.2em;" contenteditable="true">
+                    <strong>Jeremy Jones</strong><br>
+                    Managing Partner<br>
+                    Jeremy@wintermarch.com<br>
+                    334-717-9580<br>
+                    <em>Partnership documents ready for CheckSammy review</em>
+                </p>
+            </div>
+            <div class="highlight" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 1.1em;" contenteditable="true">
+                <strong>The Opportunity:</strong> Help CheckSammy's vendors save 50-60% on financing costs while driving performance improvements and earning 34% after-tax returns.
+                <br><br>
+                <strong>The Question:</strong> Will CheckSammy capture this win-win opportunity?
+            </div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <button id="prevBtn" onclick="changeSlide(-1)">← Previous</button>
+            <span class="slide-info">Slide <span id="currentSlide">1</span> of 13</span>
+            <button id="nextBtn" onclick="changeSlide(1)">Next →</button>
+        </div>
+    </div>
+    
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 13;
+        
+        function showSlide(n) {
+            const slides = document.getElementsByClassName('slide');
+            
+            if (n > totalSlides) currentSlide = totalSlides;
+            if (n < 1) currentSlide = 1;
+            
+            for (let i = 0; i < slides.length; i++) {
+                slides[i].classList.remove('active');
+            }
+            
+            slides[currentSlide - 1].classList.add('active');
+            
+            document.getElementById('currentSlide').textContent = currentSlide;
+            document.getElementById('prevBtn').disabled = currentSlide === 1;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides;
+        }
+        
+        function changeSlide(n) {
+            currentSlide += n;
+            showSlide(currentSlide);
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft' && !e.target.getAttribute('contenteditable')) changeSlide(-1);
+            if (e.key === 'ArrowRight' && !e.target.getAttribute('contenteditable')) changeSlide(1);
+        });
+        
+        // Initialize
+        showSlide(currentSlide);
+    </script>
+</body>
+</html>
