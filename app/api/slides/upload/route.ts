@@ -28,6 +28,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const { data } = sb.storage.from("slides").getPublicUrl(filename);
-  return NextResponse.json({ url: data.publicUrl });
+  // Return masked URL instead of raw Supabase storage URL
+  return NextResponse.json({ url: `/assets/slides/${filename}` });
 }
