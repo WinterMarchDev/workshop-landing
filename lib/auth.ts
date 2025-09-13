@@ -4,13 +4,10 @@ import { sbAdmin } from "@/app/server/supabase-admin";
 const COOKIE_NAME = "wm_sess";
 
 function b64urlToBuf(input: string) {
-  // Pad and replace to standard base64
-  const pad = input.length % 4 ? 4 - (input.length % 4) : 0;
-  const s = input.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat(pad);
-  const bin = atob(s);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
+  const s = input.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = s.length % 4 ? 4 - (s.length % 4) : 0;
+  const b64 = s + '='.repeat(pad);
+  return Uint8Array.from(Buffer.from(b64, 'base64'));
 }
 
 export async function verifyWmSession(token: string | undefined) {
