@@ -24,14 +24,15 @@ export async function POST(req: NextRequest) {
     pptx.defineLayout({ name: 'WM169', width: SLIDE_W_IN, height: SLIDE_H_IN });
     pptx.layout = 'WM169';
 
-    const [slide0] = deck.slides;
-
-    const slide = pptx.addSlide();
-
-    // draw in z-order
-    const sorted = [...slide0.shapes].sort((a, b) => (a.z ?? 0) - (b.z ?? 0));
-    for (const s of sorted) {
-      await addShape(slide, s, deck.width, deck.height);
+    // Process ALL slides
+    for (const slideData of deck.slides) {
+      const slide = pptx.addSlide();
+      
+      // draw in z-order
+      const sorted = [...slideData.shapes].sort((a, b) => (a.z ?? 0) - (b.z ?? 0));
+      for (const s of sorted) {
+        await addShape(slide, s, deck.width, deck.height);
+      }
     }
 
     const buf = await pptx.write('nodebuffer');

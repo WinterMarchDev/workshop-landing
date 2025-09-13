@@ -50,6 +50,7 @@ export default function SlideStage() {
 }
 
 function Shape({ s }: { s: ShapeExport }) {
+  const { upsertShape } = useDeck();
   const style = {
     position: "absolute" as const,
     left: s.x, 
@@ -81,9 +82,13 @@ function Shape({ s }: { s: ShapeExport }) {
           cursor: "text",
         }}
         onBlur={(e) => {
-          // Could hook this up to update the store
           const newText = e.currentTarget.textContent || "";
-          console.log("Text updated:", s.id, newText);
+          if (newText !== (s as any).text) {
+            upsertShape({
+              ...s,
+              text: newText
+            } as any);
+          }
         }}
       >
         {(s as any).text}

@@ -26,8 +26,13 @@ function debounce<T extends(...a:any[])=>void>(fn:T, ms:number) {
 }
 
 export const useDeck = create<State>((set, get) => {
-  const autosave = debounce(async (deckId:string) => {
-    await get().saveToServer(deckId);
+  // Store current deckId for autosave
+  let currentDeckId: string | null = null;
+  
+  const autosave = debounce(async () => {
+    if (currentDeckId) {
+      await get().saveToServer(currentDeckId);
+    }
   }, 600);
 
   return {
@@ -38,32 +43,43 @@ export const useDeck = create<State>((set, get) => {
 
     setDeck: (d) => set({ deck: d }),
     
-    setActive: (i) => set(state => 
-      state.deck ? { deck: { ...state.deck, active: i } } : state
-    ),
-
-    upsertShape: (s) => set(state => {
-      if (!state.deck) return state;
-      const slides = [...state.deck.slides];
-      const slide = { ...slides[state.deck.active] };
-      const idx = slide.shapes.findIndex(x => x.id === s.id);
-      const shapes = [...slide.shapes];
-      if (idx >= 0) shapes[idx] = s; 
-      else shapes.push(s);
-      slides[state.deck.active] = { ...slide, shapes: shapes.sort((a,b)=>a.z-b.z) };
-      return { deck: { ...state.deck, slides } };
+    setActive: (i) => set(state => {
+      if (state.deck) {
+        autosave(); // Trigger autosave on navigation
+        return { deck: { ...state.deck, active: i } };
+      }
+      return state;
     }),
 
-    deleteShape: (id) => set(state => {
-      if (!state.deck) return state;
-      const slides = [...state.deck.slides];
-      const slide = { ...slides[state.deck.active] };
-      slide.shapes = slide.shapes.filter(x => x.id !== id);
-      slides[state.deck.active] = slide;
-      return { deck: { ...state.deck, slides } };
-    }),
+    upsertShape: (s) => {
+      set(state => {
+        if (!state.deck) return state;
+        const slides = [...state.deck.slides];
+        const slide = { ...slides[state.deck.active] };
+        const idx = slide.shapes.findIndex(x => x.id === s.id);
+        const shapes = [...slide.shapes];
+        if (idx >= 0) shapes[idx] = s; 
+        else shapes.push(s);
+        slides[state.deck.active] = { ...slide, shapes: shapes.sort((a,b)=>a.z-b.z) };
+        return { deck: { ...state.deck, slides } };
+      });
+      autosave(); // Trigger autosave on shape update
+    },
+
+    deleteShape: (id) => {
+      set(state => {
+        if (!state.deck) return state;
+        const slides = [...state.deck.slides];
+        const slide = { ...slides[state.deck.active] };
+        slide.shapes = slide.shapes.filter(x => x.id !== id);
+        slides[state.deck.active] = slide;
+        return { deck: { ...state.deck, slides } };
+      });
+      autosave(); // Trigger autosave on delete
+    },
 
     loadFromServer: async (deckId) => {
+      currentDeckId = deckId; // Store the deckId for autosave
       const res = await fetch(`/api/decks/${encodeURIComponent(deckId)}`);
       if (!res.ok) throw new Error(await res.text());
       const row = await res.json();
