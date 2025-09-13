@@ -57,8 +57,8 @@ function EditorShell() {
 
     seededRef.current = true;
 
-    // Pull the legacy content from /public/vendor-advance-slides.html
-    fetch("/vendor-advance-slides.html")
+    // Pull the legacy content from /public/vendor-advance-slides.txt
+    fetch("/vendor-advance-slides.txt")
       .then((r) => r.text())
       .then((html) => {
         // Insert as the initial collaborative content
