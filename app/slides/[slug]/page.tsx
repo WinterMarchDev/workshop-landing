@@ -7,6 +7,7 @@ import { Room } from "../../Room";
 import { Tldraw, Editor as TLEditor, createShapeId, TLShapeId, toRichText } from "tldraw";
 import "tldraw/tldraw.css";
 import { toPng } from "html-to-image";
+import DeckActions from "@/components/DeckActions";
 
 import * as Y from "yjs";
 import { useRoom } from "@liveblocks/react/suspense";
@@ -516,7 +517,9 @@ function SlidesWithNotes() {
   return (
     <div className="grid grid-rows-[1fr_auto] h-screen">
       <div className="relative">
-        <Tldraw onMount={handleMount} />
+        <Tldraw onMount={handleMount}>
+          {editor && <DeckActions />}
+        </Tldraw>
         {editor && <SlidesNav editor={editor} currentFrameId={currentFrameId as TLShapeId | null} />}
         {editor && <AIToolbar editor={editor} currentFrameId={currentFrameId as TLShapeId | null} />}
         {showImportButton && window.location.pathname.includes('vendor-advance') && (
